@@ -53,6 +53,21 @@ function New-AlfredTask{
 }
 set-alias task New-AlfredTask
 
+function Invoke-AlfredTask{
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
+        [ValidateNotNullOrEmpty()]
+        $name
+    )
+    process{
+        # todo: execute dependson
+        # todo: skip executing if already executed
+        'Invoking task [{0}]' -f $name | Write-Verbose
+        &(($script:alfredtasks[$name]).Definition)
+    }
+}
+Set-Alias alfredrun Invoke-AlfredTask
 <#
 .SYNOPSIS
 This will read the given files and return streams. It's up to the caller to close the streams
@@ -89,14 +104,22 @@ function Invoke-AlfredDest{
         [Parameter(Position=0)]
         [string[]]$destination
     )
+    begin{
+        $strmsToClose = @()
+    }
     end{
+    <#
         # dispose of all streams here
         foreach($streamToClose in $sourceStreams){
             $streamToClose.Dispose() | Out-Null
         }
-        foreach($dstream in $destStreams){
-            $dstream.Flush() | out-null
-            $dstream.Dispose() | out-null
+        foreach($dstreamkey in $destStreams.Keys){
+            ($destStreams[$dstreamkey]).Flush() | out-null
+            ($destStreams[$dstreamkey]).Dispose() | out-null
+        }
+        #>
+        foreach($stream in $strmsToClose){
+            $stream.Dispose() | Out-Null
         }
     }
     process{
@@ -113,11 +136,25 @@ function Invoke-AlfredDest{
                 }
 
                 [ValidateNotNull()]$streamToWrite = $destStreams[$actualDest]
+                [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
+                [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $streamToWrite
+                $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null
+
+                # todo: buffer this
+                $strContents = $reader.ReadToEnd()
+                $writer.Write($strContents) | Out-Null
+                $writer.Flush() | Out-Null
+
                 # copyto doesn't work for concat
-                $currentStream.CopyTo($streamToWrite) | Out-Null
+                #$currentStream.CopyTo($streamToWrite) | Out-Null
                 $currentStream.Flush() | Out-Null
-                $streamToWrite.Dispose()
+                #$streamToWrite.Dispose()
+                $reader.Dispose() | Out-Null
+                $writer.Dispose() | Out-Null
                 
+                #$strmsToClose+= $reader
+                #$strmsToClose += $writer
+
                 # return the file to the pipeline
                 Get-Item $actualDest
             }
@@ -126,7 +163,7 @@ function Invoke-AlfredDest{
             }
             # if the dest only has one value then don't increment it
             if($destination.Count -gt 1){
-                $currentIndex++
+                $currentIndex++ | Out-Null
             }
         }
     }
@@ -146,7 +183,7 @@ function Invoke-AlfredConcat{
         Invoke-AlfredDest -sourceStreams $sourceStreams -destination $destination
     }
 }
-Set-Alias concat Invoke-AflredConcat
+Set-Alias concat Invoke-AlfredConcat
 
 
 

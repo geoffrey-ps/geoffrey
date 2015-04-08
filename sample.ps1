@@ -2,12 +2,22 @@
 
 $destFilesToRemove = 'C:\temp\alfred\dest\site-from-ps.css','C:\temp\alfred\dest\combined.css'
 
-if(Test-Path C:\temp\site-from-ps.css){
-    Remove-Item -Path C:\temp\site-from-ps.css
+if(Test-Path C:\temp\site-from-ps.css){ Remove-Item -Path C:\temp\site-from-ps.css }
+
+requires alfred-less
+requires alfred-coffee
+requires alfred-sass
+
+task democopy {
+    src c:\temp\site.css | 
+        dest C:\temp\alfred\dest\site-from-ps.css    
 }
 
-src c:\temp\site.css | dest C:\temp\site-from-ps.css
+task democoncat {
+    dir C:\temp\alfred\css\lib *.css | 
+        src | 
+        concat C:\temp\alfred\dest\combined.css
+}
 
-#Get-Content C:\temp\site-from-ps.css
-
-Get-ChildItem C:\temp\alfred\css\lib *.css | src | dest C:\temp\alfred\dest\combined.css
+alfredrun democopy
+alfredrun democoncat
