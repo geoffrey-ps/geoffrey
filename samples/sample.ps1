@@ -53,7 +53,16 @@ task demominifyjs{
         dest "$destfolder\jquery-1.10.2.min.js"
 }
 
+task demominifyjs2{
+    # todo: This is not working currently, need to figure out why not
+    dir "$sourcefolder\js\jquery-1.10.2.js","$sourcefolder\js\r.js" |
+        src |
+        minifycss |
+        dest ("$destfolder\jquery-1.10.2.min.js","$destfolder\r.min.js")
+}
+
 alfredrun democopy
 alfredrun democoncat
 alfredrun demominifycss
 alfredrun demominifyjs
+#alfredrun demominifyjs2
