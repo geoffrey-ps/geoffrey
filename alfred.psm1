@@ -99,7 +99,7 @@ function Invoke-AlfredDest{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [System.IO.FileStream[]]$sourceStreams,
+        [System.IO.Stream[]]$sourceStreams,
 
         [Parameter(Position=0)]
         [string[]]$destination
@@ -108,21 +108,12 @@ function Invoke-AlfredDest{
         $strmsToClose = @()
     }
     end{
-    <#
-        # dispose of all streams here
-        foreach($streamToClose in $sourceStreams){
-            $streamToClose.Dispose() | Out-Null
-        }
-        foreach($dstreamkey in $destStreams.Keys){
-            ($destStreams[$dstreamkey]).Flush() | out-null
-            ($destStreams[$dstreamkey]).Dispose() | out-null
-        }
-        #>
         foreach($stream in $strmsToClose){
             $stream.Dispose() | Out-Null
         }
     }
     process{
+    # todo: if the dest folder doesn't exist then create it
         $currentIndex = 0
         $destStreams = @{}
         # see if we are writing to a single file or multiple
@@ -185,6 +176,48 @@ function Invoke-AlfredConcat{
 }
 Set-Alias concat Invoke-AlfredConcat
 
+# this will take in a set of streams, minify the css and then return new streams
+# this uses ajaxmin see https://ajaxmin.codeplex.com/wikipage?title=AjaxMin%20DLL
+[string]$script:ajaxminpath = $null
+function Invoke-AlfredMinifyCss{
+    [cmdletbinding()]
+    param(
+        [Parameter(ValueFromPipeline=$true)]
+        [System.IO.FileStream[]]$sourceStreams
+    )
+    begin{
+        # ensure ajaxmin is loaded
+        if([string]::IsNullOrEmpty($script:ajaxminpath)){
+            $script:ajaxminpath = (Get-NuGetPackage -name ajaxmin -version '5.14.5506.26202')
+            $assemblyPath = ((Join-Path $ajaxminpath 'bin\net40\AjaxMin.dll'))
+            'Loading AjaxMin from [{0}]' -f $assemblyPath | Write-Verbose
+            if(-not (Test-Path $assemblyPath)){
+                throw ('Unable to locate ajaxmin at expected location [{0}]' -f $assemblyPath)
+            }
+            # load the assemblies as well
+            Add-Type -Path $assemblyPath | Out-Null
+        }
+        $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
+    }
+    process{
+        foreach($cssstream in $sourceStreams){
+            # minify the stream and return
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $cssstream
+            $source = $reader.ReadToEnd()
+            $resultText = $minifier.MinifyStyleSheet($source)
+            # create a stream from the text
+            $memStream = New-Object -TypeName 'System.IO.MemoryStream'
+            [System.IO.StreamWriter]$stringwriter = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $memStream
+            $stringwriter.Write($resultText) | Out-Null
+            $stringwriter.Flush() | Out-Null
+            $memStream.Position = 0
+
+            # return the stream to the pipeline
+            $memStream
+        }
+    }
+}
+Set-Alias minifycss Invoke-AlfredMinifyCss
 
 
 Export-ModuleMember -function *
