@@ -165,7 +165,7 @@ function Invoke-AlfredConcat{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [System.IO.FileStream[]]$sourceStreams,
+        [System.IO.Stream[]]$sourceStreams,
 
         [Parameter(Position=0)]
         [string]$destination

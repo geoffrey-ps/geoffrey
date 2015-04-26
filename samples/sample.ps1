@@ -32,7 +32,7 @@ task democopy {
 }
 
 task democoncat {
-    dir "$sourcefolder\css\lib *.css" |
+    dir "$sourcefolder\css\lib\*.css" |
         src | 
         concat "$destfolder\combined.css"
 }
