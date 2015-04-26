@@ -11,9 +11,10 @@ $scriptDir = ((Get-ScriptDirectory) + "\")
 if(Get-Module alfredps){
     Remove-Module alfredps
 }
-Import-Module (Join-Path $scriptDir 'alfred.psm1')
+Import-Module (Join-Path $scriptDir '..\alfred.psm1')
 
-$destfolder = 'C:\temp\alfredps\dest'
+$destfolder = (Join-Path $scriptDir 'dest')
+$sourcefolder = $scriptDir
 
 if(-not (Test-Path $destfolder)){
     New-Item -Path $destfolder -ItemType Directory -Force
@@ -26,24 +27,33 @@ requires alfred-coffee
 requires alfred-sass
 
 task democopy {
-    src C:\temp\alfredps\css\site.css |
-        dest C:\temp\alfredps\dest\site-from-ps.css
+    src "$sourcefolder\css\site.css" |
+        dest "$destfolder\site-from-ps.css"
 }
 
 task democoncat {
-    dir C:\temp\alfredps\css\lib *.css |
+    dir "$sourcefolder\css\lib *.css" |
         src | 
-        concat C:\temp\alfredps\dest\combined.css
+        concat "$destfolder\combined.css"
 }
 
 task demominifycss{
     # todo: figure out how handle dest given a folder instead of file paths
-    dir C:\temp\alfredps\css\site.css |
+    dir "$sourcefolder\css\site.css" |
         src |
         minifycss |
-        dest C:\temp\alfredps\dest\site.min.css
+        dest "$destfolder\site.min.css"
+}
+
+task demominifyjs{
+    # todo: figure out how handle dest given a folder instead of file paths
+    dir "$sourcefolder\js\jquery-1.10.2.js" |
+        src |
+        minifycss |
+        dest "$destfolder\jquery-1.10.2.min.js"
 }
 
 alfredrun democopy
 alfredrun democoncat
 alfredrun demominifycss
+alfredrun demominifyjs
