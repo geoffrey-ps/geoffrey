@@ -1,6 +1,8 @@
 [cmdletbinding()]
 param()
 
+Set-StrictMode -Version Latest
+
 function Get-ScriptDirectory
 {
     $Invocation = (Get-Variable MyInvocation -Scope 1).Value
@@ -58,16 +60,66 @@ function Invoke-AlfredTask{
     param(
         [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
         [ValidateNotNullOrEmpty()]
-        $name
+        [string[]]$name
     )
     process{
-        # todo: execute dependson
-        # todo: skip executing if already executed
-        'Invoking task [{0}]' -f $name | Write-Verbose
-        &(($script:alfredtasks[$name]).Definition)
+        foreach($taskname in $name){
+            # todo: skip executing if already executed
+
+            $tasktorun = $script:alfredtasks[$taskname]
+
+            if($tasktorun.DependsOn -ne $null){
+                foreach($dtask in ($tasktorun.DependsOn)){
+                    # avoid infinite loop
+                    if([string]::Compare($taskname,$dtask) -ne 0){
+                        Invoke-AlfredTask $dtask
+                    }
+                }
+            }
+
+            if($tasktorun.Definition -ne $null){
+                'Invoking task [{0}]' -f $name | Write-Verbose
+                &(($script:alfredtasks[$name]).Definition)
+            }
+        }
     }
 }
 Set-Alias alfredrun Invoke-AlfredTask
+
+function InternalGet-AlfredSourcePipelineObj{
+    [cmdletbinding()]
+    param(
+        [System.IO.Stream[]]$sourceStream,
+        [System.IO.FileInfo[]]$sourcePath
+    )
+    begin{
+        if($sourceStream -ne $null){
+            $currentIndex = 0
+            if($sourceStream.Count -ne $sourcePath.Count){
+                throw ('There is a mismatch between the number of source streams [{0}] and source paths [{1}]' -f $sourceStream.Count,$sourcePath.Count)
+            }
+        }
+    }
+    process{
+        if($sourceStream -ne $null){
+            $currentIndex = 0
+
+            foreach($source in $sourceStream){
+                # create an object and return it to the pipeline
+                $sourceObj = New-Object psobject -Property @{
+                    SourceStream = $source
+                    SourcePath = ($sourcePath[$currentIndex])
+                }
+                $sourceObj.PSObject.TypeNames.Insert(0,'AlfredSourcePipeObj')
+                $currentIndex++ | Out-Null
+
+                # return the obj to the pipeline
+                $sourceObj
+            }
+        }
+    }
+}
+
 <#
 .SYNOPSIS
 This will read the given files and return streams. It's up to the caller to close the streams
@@ -76,7 +128,7 @@ function Invoke-AlfredSource{
     [cmdletbinding()]
     param(
         [Parameter(Position=0,ValueFromPipeline=$true)]
-        [object[]]$sourceFiles
+        [System.IO.FileInfo[]]$sourceFiles
     )
     process{
         foreach($file in $sourceFiles){
@@ -84,8 +136,9 @@ function Invoke-AlfredSource{
             if($file -is [System.IO.FileInfo]){
                 $filepath = $file.FullName
             }
+
             # read the file and return the stream to the pipeline
-            [System.IO.File]::OpenRead($filepath) 
+            InternalGet-AlfredSourcePipelineObj -sourceStream ([System.IO.File]::OpenRead($filepath)) -sourcePath $file
         }
     }
 }
@@ -99,7 +152,7 @@ function Invoke-AlfredDest{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [System.IO.Stream[]]$sourceStreams,
+        [object[]]$sourceStreams, # type is AlfredSourcePipeObj
 
         [Parameter(Position=0)]
         [string[]]$destination
@@ -117,9 +170,15 @@ function Invoke-AlfredDest{
         $currentIndex = 0
         $destStreams = @{}
         # see if we are writing to a single file or multiple
-        foreach($currentStream in $sourceStreams){
+        foreach($currentStreamPipeObj in $sourceStreams){
+            $currentStream = ($currentStreamPipeObj.SourceStream)
             $actualDest = $destination[$currentIndex]
             
+            # see if it's a directory and if so append the source file to it
+            if(Test-Path $actualDest -PathType Container){
+                $actualDest = (Join-Path $actualDest ($currentStreamPipeObj.SourcePath.Name))
+            }
+
             # write the stream to the dest and close the source stream
             try{                
                 if( ($destStreams[$actualDest]) -eq $null){
@@ -136,16 +195,10 @@ function Invoke-AlfredDest{
                 $writer.Write($strContents) | Out-Null
                 $writer.Flush() | Out-Null
 
-                # copyto doesn't work for concat
-                #$currentStream.CopyTo($streamToWrite) | Out-Null
                 $currentStream.Flush() | Out-Null
-                #$streamToWrite.Dispose()
                 $reader.Dispose() | Out-Null
                 $writer.Dispose() | Out-Null
                 
-                #$strmsToClose+= $reader
-                #$strmsToClose += $writer
-
                 # return the file to the pipeline
                 Get-Item $actualDest
             }
@@ -161,21 +214,6 @@ function Invoke-AlfredDest{
 }
 Set-Alias dest Invoke-AlfredDest
 
-function Invoke-AlfredConcat{
-    [cmdletbinding()]
-    param(
-        [Parameter(ValueFromPipeline=$true)]
-        [System.IO.Stream[]]$sourceStreams,
-
-        [Parameter(Position=0)]
-        [string]$destination
-    )
-    process{
-        Invoke-AlfredDest -sourceStreams $sourceStreams -destination $destination
-    }
-}
-Set-Alias concat Invoke-AlfredConcat
-
 # this will take in a set of streams, minify the css and then return new streams
 # this uses ajaxmin see https://ajaxmin.codeplex.com/wikipage?title=AjaxMin%20DLL
 [string]$script:ajaxminpath = $null
@@ -183,7 +221,7 @@ function Invoke-AlfredMinifyCss{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [System.IO.FileStream[]]$sourceStreams
+        [object[]]$sourceStreams  # type is AlfredSourcePipeObj
     )
     begin{
         # ensure ajaxmin is loaded
@@ -200,7 +238,8 @@ function Invoke-AlfredMinifyCss{
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
     }
     process{
-        foreach($cssstream in $sourceStreams){
+        foreach($cssstreampipeobj in $sourceStreams){
+            $cssstream = ($cssstreampipeobj.SourceStream)
             # minify the stream and return
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $cssstream
             $source = $reader.ReadToEnd()
@@ -213,7 +252,7 @@ function Invoke-AlfredMinifyCss{
             $memStream.Position = 0
 
             # return the stream to the pipeline
-            $memStream
+            InternalGet-AlfredSourcePipelineObj -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
         }
     }
 }
@@ -223,7 +262,7 @@ function Invoke-AlfredMinifyJavaScript{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [System.IO.FileStream[]]$sourceStreams
+        [object[]]$sourceStreams  # type is AlfredSourcePipeObj
     )
     begin{
         # ensure ajaxmin is loaded
@@ -240,7 +279,8 @@ function Invoke-AlfredMinifyJavaScript{
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
     }
     process{
-        foreach($cssstream in $sourceStreams){
+        foreach($cssstreampipeobj in $sourceStreams){
+            $cssstream = ($cssstreampipeobj.SourceStream)
             # minify the stream and return
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $cssstream
             $source = $reader.ReadToEnd()
@@ -253,7 +293,7 @@ function Invoke-AlfredMinifyJavaScript{
             $memStream.Position = 0
 
             # return the stream to the pipeline
-            $memStream
+            InternalGet-AlfredSourcePipelineObj -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
         }
     }
 }

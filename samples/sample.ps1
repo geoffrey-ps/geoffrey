@@ -8,8 +8,8 @@ function Get-ScriptDirectory
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
-if(Get-Module alfredps){
-    Remove-Module alfredps
+if(Get-Module alfred){
+    Remove-Module alfred
 }
 Import-Module (Join-Path $scriptDir '..\alfred.psm1')
 
@@ -34,7 +34,7 @@ task democopy {
 task democoncat {
     dir "$sourcefolder\css\lib\*.css" |
         src | 
-        concat "$destfolder\combined.css"
+        dest "$destfolder\combined.css"
 }
 
 task demominifycss{
@@ -54,15 +54,36 @@ task demominifyjs{
 }
 
 task demominifyjs2{
-    # todo: This is not working currently, need to figure out why not
+    $dest = (Join-Path $destfolder 'demominifyjs2')
+    if(-not (Test-Path $dest)){
+        New-Item -ItemType Directory -Path $dest | out-null
+    }
     dir "$sourcefolder\js\jquery-1.10.2.js","$sourcefolder\js\r.js" |
         src |
-        minifycss |
-        dest ("$destfolder\jquery-1.10.2.min.js","$destfolder\r.min.js")
+        minifyjs |
+        dest "$dest"
 }
 
+task combineandminify{
+    dir "$sourcefolder\js\jquery-1.10.2.js","$sourcefolder\js\r.js" |
+        src |
+        minifyjs |
+        dest "$destfolder\combineminify.js"
+}
+
+task runall -dependsOn democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify
+
+<#
 alfredrun democopy
 alfredrun democoncat
 alfredrun demominifycss
 alfredrun demominifyjs
-#alfredrun demominifyjs2
+alfredrun demominifyjs2
+alfredrun combineandminify
+#>
+
+# this will run all the tasks
+alfredrun runall
+
+
+
