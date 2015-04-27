@@ -299,6 +299,45 @@ function Invoke-AlfredMinifyJavaScript{
 }
 Set-Alias minifyjs Invoke-AlfredMinifyJavaScript
 
+$script:lessassemblypath = $null
+function Invoke-AlfredLess{
+    [cmdletbinding()]
+    param(
+        [Parameter(ValueFromPipeline=$true)]
+        [object[]]$sourceStreams  # type is AlfredSourcePipeObj        
+    )
+    begin{
+        if([string]::IsNullOrEmpty($script:ajaxminpath)){
+            $script:lessassemblypath = (Get-NuGetPackage -name dotless -version '1.5.0-beta1')
+            $assemblyPath = ((Join-Path $script:lessassemblypath 'bin\dotless.Core.dll'))
+            'Loading dotless from [{0}]' -f $assemblyPath | Write-Verbose
+            if(-not (Test-Path $assemblyPath)){
+                throw ('Unable to locate dotless at expected location [{0}]' -f $assemblyPath)
+            }
+            # load the assemblies as well
+            Add-Type -Path $assemblyPath | Out-Null
+        }
+    }
+    process{
+        foreach($lessstreampipeobj in $sourceStreams){
+            $lessstream = ($lessstreampipeobj.SourceStream)
+            # read the file and compile it
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $lessstream
+            $source = $reader.ReadToEnd()
+            $compiledText = [dotless.Core.Less]::Parse($source)
+            $memStream = New-Object -TypeName 'System.IO.MemoryStream'
+            [System.IO.StreamWriter]$stringwriter = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $memStream
+            $stringwriter.Write($compiledText) | Out-Null
+            $stringwriter.Flush() | Out-Null
+            $memStream.Position = 0
+
+            # return the stream to the pipeline
+            InternalGet-AlfredSourcePipelineObj -sourceStream $memStream -sourcePath ($lessstreampipeobj.SourcePath)
+        }
+    }
+}
+Set-Alias less Invoke-AlfredLess
+
 Export-ModuleMember -function *
 Export-ModuleMember -Alias *
 # begin sample script

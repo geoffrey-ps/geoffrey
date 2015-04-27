@@ -9,9 +9,9 @@ function Get-ScriptDirectory
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
 if(Get-Module alfred){
-    Remove-Module alfred
+    Remove-Module alfred -force
 }
-Import-Module (Join-Path $scriptDir '..\alfred.psm1')
+Import-Module (Join-Path $scriptDir '..\alfred.psm1') -Force
 
 $destfolder = (Join-Path $scriptDir 'dest')
 $sourcefolder = $scriptDir
@@ -38,15 +38,13 @@ task democoncat {
 }
 
 task demominifycss{
-    # todo: figure out how handle dest given a folder instead of file paths
     dir "$sourcefolder\css\site.css" |
         src |
-        minifycss |
+        minifyjs |
         dest "$destfolder\site.min.css"
 }
 
 task demominifyjs{
-    # todo: figure out how handle dest given a folder instead of file paths
     dir "$sourcefolder\js\jquery-1.10.2.js" |
         src |
         minifycss |
@@ -71,6 +69,18 @@ task combineandminify{
         dest "$destfolder\combineminify.js"
 }
 
+task demoless{
+    dir "$sourcefolder\less\basic.less" |
+        src |
+        less |
+        dest "$destfolder\basic-from-less.css"
+
+    dir "$sourcefolder\less\site.less" |
+        src |
+        less |
+        dest "$destfolder\site-from-less.css"
+}
+
 task runall -dependsOn democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify
 
 <#
@@ -83,7 +93,7 @@ alfredrun combineandminify
 #>
 
 # this will run all the tasks
-alfredrun runall
-
+#alfredrun runall
+alfredrun demoless
 
 
