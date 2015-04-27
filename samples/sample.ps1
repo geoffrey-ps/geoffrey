@@ -81,7 +81,7 @@ task demoless{
         dest "$destfolder\site-from-less.css"
 }
 
-task runall -dependsOn democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify
+task runall -dependsOn democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify,demoless
 
 <#
 alfredrun democopy
@@ -93,7 +93,7 @@ alfredrun combineandminify
 #>
 
 # this will run all the tasks
-#alfredrun runall
-alfredrun demoless
+alfredrun runall
+
 
 
