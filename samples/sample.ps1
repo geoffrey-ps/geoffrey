@@ -23,15 +23,17 @@ if(-not (Get-Module alfred)){
     (new-object Net.WebClient).DownloadString($installUri) | iex
 }
 
-if(-not (Test-Path $destfolder)){
-    New-Item -Path $destfolder -ItemType Directory -Force
+task init{
+    if(-not (Test-Path $destfolder)){
+        New-Item -Path $destfolder -ItemType Directory -Force
+    }
+
+    Get-ChildItem $destfolder -Recurse -File | Remove-Item
+
+    requires alfred-less
+    requires alfred-coffee
+    requires alfred-sass
 }
-
-Get-ChildItem $destfolder -Recurse -File | Remove-Item
-
-requires alfred-less
-requires alfred-coffee
-requires alfred-sass
 
 task democopy {
     src "$sourcefolder\css\site.css" |
@@ -88,7 +90,7 @@ task demoless{
         dest "$destfolder\site-from-less.css"
 }
 
-task runall -dependsOn democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify,demoless
+task runall -dependsOn init,democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify,demoless
 
 <#
 alfredrun democopy

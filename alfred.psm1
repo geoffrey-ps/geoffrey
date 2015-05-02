@@ -10,7 +10,22 @@ function Get-ScriptDirectory
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
-[hashtable]$script:alfredtasks = @{}
+$global:alfredcontext = New-Object PSObject -Property @{
+    HasBeenInitalized = $false
+    Tasks = [hashtable]@{}
+    RunTasks = $true
+}
+
+# later we will use this to check if it has been initalized and throw an error if not
+function InternalInitalizeAlfred{
+    [cmdletbinding()]
+    param()
+    process{
+        $global:alfredcontext.Tasks = [hashtable]@{}
+        $global:alfredcontext.RunTasks = $true 
+        #$script:alfredhasbeeninitalized = $true
+    }
+}
 
 function Invoke-AlfredRequires{
     [cmdletbinding()]
@@ -18,12 +33,58 @@ function Invoke-AlfredRequires{
         [string[]]$moduleName
     )
     process{
-        foreach($itemName in $moduleName){
-            'Downloading and importing {0}' -f $itemName | Write-Host
+        if($global:alfredcontext.RunTasks){
+            foreach($itemName in $moduleName){
+                'Downloading and importing {0}' -f $itemName | Write-Host
+            }
+        }
+        else{
+            'Skipping requires because alfredruntasks is false' | Write-Verbose
         }
     }
 }
 Set-Alias requires Invoke-AlfredRequires
+
+<#
+.SYNOPSIS
+    This is the command that users will use to run scripts.
+
+.PARAMETER scriptPath
+    Path to the script to execute, the default is '.\alfred-script.ps1'
+
+.PARAMETER list
+    This will return the list of tasks in the file
+#>
+function Invoke-Alfred{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0)]
+        [System.IO.FileInfo]$scriptPath = '.\alfred-script.ps1',
+
+        [Parameter(Position=1)]
+        [switch]$list
+    )
+    begin{
+        InternalInitalizeAlfred
+    }
+    process{
+        $runtasks = !($list)
+        try{
+            $global:alfredcontext.RunTasks =(-not $list)
+            # execute the script
+            & $scriptPath
+
+            if($list){
+                # output the name of all the registered tasks
+                $global:alfredcontext.Tasks.Keys
+            }
+        }
+        finally{
+            $global:alfredcontext.RunTasks = $true
+        }
+    }
+}
+Set-Alias alfred Invoke-Alfred
 
 <#
 .SYNOPSIS
@@ -49,8 +110,7 @@ function New-AlfredTask{
             Definition = $defintion
             DependsOn = $dependsOn
         }
-
-        $script:alfredtasks[$name]=$result
+        $global:alfredcontext.Tasks[$name]=$result
     }
 }
 set-alias task New-AlfredTask
@@ -63,23 +123,25 @@ function Invoke-AlfredTask{
         [string[]]$name
     )
     process{
-        foreach($taskname in $name){
-            # todo: skip executing if already executed
+        if($global:alfredcontext.RunTasks -eq $true){
+            foreach($taskname in $name){
+                # todo: skip executing if already executed
 
-            $tasktorun = $script:alfredtasks[$taskname]
+                $tasktorun = $global:alfredcontext.Tasks[$taskname]
 
-            if($tasktorun.DependsOn -ne $null){
-                foreach($dtask in ($tasktorun.DependsOn)){
-                    # avoid infinite loop
-                    if([string]::Compare($taskname,$dtask) -ne 0){
-                        Invoke-AlfredTask $dtask
+                if($tasktorun.DependsOn -ne $null){
+                    foreach($dtask in ($tasktorun.DependsOn)){
+                        # avoid infinite loop
+                        if([string]::Compare($taskname,$dtask) -ne 0){
+                            Invoke-AlfredTask $dtask
+                        }
                     }
                 }
-            }
 
-            if($tasktorun.Definition -ne $null){
-                'Invoking task [{0}]' -f $name | Write-Verbose
-                &(($script:alfredtasks[$name]).Definition)
+                if($tasktorun.Definition -ne $null){
+                    'Invoking task [{0}]' -f $name | Write-Verbose
+                    &(($global:alfredcontext.Tasks[$name]).Definition)
+                }
             }
         }
     }
@@ -340,47 +402,3 @@ Set-Alias less Invoke-AlfredLess
 
 Export-ModuleMember -function *
 Export-ModuleMember -Alias *
-# begin sample script
-<#
-requires alfred-less
-requires alfred-coffee
-requires alfred-concat
-
-task copy {
-    'inside the copy task' | Write-Host
-}
-
-task coffee {
-    'inside the coffee task' | Write-Host
-}
-
-task less {
-    'inside the less task' | Write-Host
-}
-
-task default -dependsOn copy,less,coffee
-
-$script:alfredtasks
-#>
-# requires alfred-less; alfred-coffee;alfred-concat
-<#
-$alfred = (new-object Net.WebClient).DownloadString("http://alfredps.com/getalfred.ps1") | iex
-
-requires alfred-less
-requires alfred-coffee
-requires alfred-concat
-
-task copy {
-    src './less/site.less' |         # gets site.less (i think it would return Stream based objects but not sure)
-      less './less/site.less' |      # converts from site.less to site.css (?where is the temp file stored? or is all streams)
-      dest './css'                   # writes the file to the ./css/site.css
-}
-task coffee {
-    src './coffee/*.coffee','./lib/coffee/*.coffee' |
-      concat 'site.js' |
-      coffee |
-      dest './'
-}
-
-task default -depends copy,less,coffee
-#>
