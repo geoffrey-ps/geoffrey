@@ -1,20 +1,27 @@
-﻿[cmdletbinding()]
-param()
+﻿<#
+.SYNOPSIS  
+	Sample for using alfredps.
 
-function Get-ScriptDirectory
-{
-    $Invocation = (Get-Variable MyInvocation -Scope 1).Value
-    Split-Path $Invocation.MyCommand.Path
+.PARAMETER importFromSource
+    If set this will import from the local source
+#>
+[cmdletbinding()]
+param(
+    [string]$installUri='https://raw.githubusercontent.com/sayedihashimi/alfredps/master/getalfred.ps1'
+)
+
+function Get-ScriptDirectory{
+    Split-Path ((Get-Variable MyInvocation -Scope 1).Value).MyCommand.Path
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
-if(Get-Module alfred){
-    Remove-Module alfred -force
-}
-Import-Module (Join-Path $scriptDir '..\alfred.psm1') -Force
-
 $destfolder = (Join-Path $scriptDir 'dest')
 $sourcefolder = $scriptDir
+
+if(-not (Get-Module alfred)){
+    # install from github
+    (new-object Net.WebClient).DownloadString($installUri) | iex
+}
 
 if(-not (Test-Path $destfolder)){
     New-Item -Path $destfolder -ItemType Directory -Force
@@ -40,14 +47,14 @@ task democoncat {
 task demominifycss{
     dir "$sourcefolder\css\site.css" |
         src |
-        minifyjs |
+        minifycss |
         dest "$destfolder\site.min.css"
 }
 
 task demominifyjs{
     dir "$sourcefolder\js\jquery-1.10.2.js" |
         src |
-        minifycss |
+        minifyjs |
         dest "$destfolder\jquery-1.10.2.min.js"
 }
 
