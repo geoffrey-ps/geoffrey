@@ -307,7 +307,7 @@ function Invoke-AlfredLess{
         [object[]]$sourceStreams  # type is AlfredSourcePipeObj        
     )
     begin{
-        if([string]::IsNullOrEmpty($script:ajaxminpath)){
+        if([string]::IsNullOrEmpty($script:lessassemblypath)){
             $script:lessassemblypath = (Get-NuGetPackage -name dotless -version '1.5.0-beta1')
             $assemblyPath = ((Join-Path $script:lessassemblypath 'bin\dotless.Core.dll'))
             'Loading dotless from [{0}]' -f $assemblyPath | Write-Verbose
