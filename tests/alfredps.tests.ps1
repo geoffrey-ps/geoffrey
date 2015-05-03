@@ -232,7 +232,7 @@ Describe 'Invoke-AlfredDest tests'{
         $dest | Should exist
     }
 
-    <# TODO: streams not being closed correctly are causing issues here
+    # TODO: streams not being closed correctly are causing issues here
     It 'will copy multiple files to multiple destinations'{
         $path1 = Join-Path $TestDrive $script:tempfilepath1
         $path2 = Join-Path $TestDrive $script:tempfilepath2
@@ -262,6 +262,5 @@ Describe 'Invoke-AlfredDest tests'{
         Invoke-AlfredDest -sourceStreams $result -destination $dest1
         $dest1 | Should exist
     }
-    #>
 }
 

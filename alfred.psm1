@@ -250,45 +250,60 @@ function Invoke-AlfredDest{
     # todo: if the dest folder doesn't exist then create it
         $currentIndex = 0
         $destStreams = @{}
-        # see if we are writing to a single file or multiple
-        foreach($currentStreamPipeObj in $sourceStreams){
-            $currentStream = ($currentStreamPipeObj.SourceStream)
-            $actualDest = $destination[$currentIndex]
+        try{
+            # see if we are writing to a single file or multiple
+            foreach($currentStreamPipeObj in $sourceStreams){
+                $currentStream = ($currentStreamPipeObj.SourceStream)
+                $actualDest = $destination[$currentIndex]
             
-            # see if it's a directory and if so append the source file to it
-            if(Test-Path $actualDest -PathType Container){
-                $actualDest = (Join-Path $actualDest ($currentStreamPipeObj.SourcePath.Name))
-            }
-
-            # write the stream to the dest and close the source stream
-            try{                
-                if( ($destStreams[$actualDest]) -eq $null){
-                    $destStreams[$actualDest] = [System.IO.File]::OpenWrite($actualDest)
+                # see if it's a directory and if so append the source file to it
+                if(Test-Path $actualDest -PathType Container){
+                    $actualDest = (Join-Path $actualDest ($currentStreamPipeObj.SourcePath.Name))
                 }
 
-                [ValidateNotNull()]$streamToWrite = $destStreams[$actualDest]
-                [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
-                [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $streamToWrite
-                $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null
+                # write the stream to the dest and close the source stream
+                try{
+                    if( ($destStreams[$actualDest]) -eq $null){
+                        $destStreams[$actualDest] = [System.IO.File]::OpenWrite($actualDest)
+                    }
 
-                # todo: buffer this
-                $strContents = $reader.ReadToEnd()
-                $writer.Write($strContents) | Out-Null
-                $writer.Flush() | Out-Null
+                    [ValidateNotNull()]$streamToWrite = $destStreams[$actualDest]
+                    [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
+                    [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $streamToWrite
+                    $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null
 
-                $currentStream.Flush() | Out-Null
-                $reader.Dispose() | Out-Null
-                $writer.Dispose() | Out-Null
-                
-                # return the file to the pipeline
-                Get-Item $actualDest
+                    # todo: buffer this
+                    $strContents = $reader.ReadToEnd()
+                    $writer.Write($strContents) | Out-Null
+                    $writer.Flush() | Out-Null
+
+                    $currentStream.Flush() | Out-Null
+
+                    $strmsToClose += $reader
+                    $strmsToClose += $writer
+
+                    # return the file to the pipeline
+                    Get-Item $actualDest
+                }
+                catch{
+                    $_ | Write-Error
+                }
+                # if the dest only has one value then don't increment it
+                if($destination.Count -gt 1){
+                    $currentIndex++ | Out-Null
+                }
             }
-            catch{
-                $_ | Write-Error
-            }
-            # if the dest only has one value then don't increment it
-            if($destination.Count -gt 1){
-                $currentIndex++ | Out-Null
+        }
+        finally{
+            foreach($strm in $strmsToClose){
+                try{
+                    $strm.Dispose()
+                }
+                catch [System.ObjectDisposedException]{
+                    # this exception will be thrown if we dispose of a stream more than once.
+                    # for ex when dest has multiple input files but only one dest,
+                    # so its ok to ignore it
+                }
             }
         }
     }
