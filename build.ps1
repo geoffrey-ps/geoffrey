@@ -16,7 +16,7 @@ $scriptDir = ((Get-ScriptDirectory) + "\")
 function EnsurePsbuildInstlled{
     [cmdletbinding()]
     param(
-        [string]$psbuildInstallUri = 'https://raw.github.com/ligershark/psbuild/master/src/GetPSBuild.ps1'
+        [string]$psbuildInstallUri = 'https://raw.githubusercontent.com/ligershark/psbuild/master/src/GetPSBuild.ps1'
     )
     process{
         # if psbuild is not available
