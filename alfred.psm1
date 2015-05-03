@@ -370,11 +370,12 @@ function Invoke-AlfredMinifyJavaScript{
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
     }
     process{
-        foreach($cssstreampipeobj in $sourceStreams){
-            $cssstream = ($cssstreampipeobj.SourceStream)
+        foreach($jsstreampipeobj in $sourceStreams){
+            $jsstream = ($jsstreampipeobj.SourceStream)
             # minify the stream and return
-            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $cssstream
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $jsstream
             $source = $reader.ReadToEnd()
+            $reader.Dispose()
             $resultText = $minifier.MinifyJavaScript($source)
             # create a stream from the text
             $memStream = New-Object -TypeName 'System.IO.MemoryStream'
@@ -384,7 +385,7 @@ function Invoke-AlfredMinifyJavaScript{
             $memStream.Position = 0
 
             # return the stream to the pipeline
-            InternalGet-AlfredSourcePipelineObj -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
+            InternalGet-AlfredSourcePipelineObj -sourceStream $memStream -sourcePath ($jsstreampipeobj.SourcePath)
         }
     }
 }

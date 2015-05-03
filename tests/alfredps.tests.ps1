@@ -373,3 +373,116 @@ header {
         }
     }
 }
+
+Describe 'Invoke-AlfredMinifyJavaScript tests'{
+    # samples from http://javascriptbook.com/code/
+    $script:samplejs01 = @'
+var today = new Date();
+var hourNow = today.getHours();
+var greeting;
+
+if (hourNow > 18) {
+    greeting = 'Good evening!';
+} else if (hourNow > 12) {
+    greeting = 'Good afternoon!';
+} else if (hourNow > 0) {
+    greeting = 'Good morning!';
+} else {
+    greeting = 'Welcome!';
+}
+
+document.write('<h3>' + greeting + '</h3>');
+'@
+    $script:samplejs02 = @'
+// Create a variable for the subtotal and make a calculation
+var subtotal = (13 + 1) * 5; // Subtotal is 70
+
+// Create a variable for the shipping and make a calculation
+var shipping = 0.5 * (13 + 1); // Shipping is 7
+
+// Create the total by combining the subtotal and shipping values
+var total = subtotal + shipping; // Total is 77
+
+// Write the results to the screen
+var elSub = document.getElementById('subtotal');
+elSub.textContent = subtotal;
+
+var elShip = document.getElementById('shipping');
+elShip.textContent = shipping;
+
+var elTotal = document.getElementById('total');
+elTotal.textContent = total;
+
+/*
+NOTE: textContent does not work in IE8 or earlier
+You can use innerHTML on lines 12, 15, and 18 but note the security issues on p228-231
+elSub.innerHTML = subtotal;
+elShip.innerHTML = shipping;
+elTotal.innerHTML = total;
+*/
+'@
+    $script:samplejs03 = @'
+// Create variables and assign their values
+var inStock;
+var shipping;
+inStock = true;
+shipping = false;
+
+// Get the element that has an id of stock
+var elStock = document.getElementById('stock');
+// Set class name with value of inStock variable
+elStock.className = inStock;
+
+// Get the element that has an id of shipping
+var elShip = document.getElementById('shipping');
+// Set class name with value of shipping variable
+elShip.className = shipping;
+'@
+    It 'Can invoke Invoke-AlfredMinifyJavaScript with a single file'{
+        $samplejs01path = 'minifyjs\sample01.js'
+        Setup -File -Path $samplejs01path -Content $script:samplejs01
+        $path1 = Join-Path $TestDrive $samplejs01path
+        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyJavaScript)
+        # ensure content is there
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        $minContent = $reader.ReadToEnd()
+
+        $result | Should not be null
+        $result.SourceStream | Should not be $null
+        $result.SourcePath | Should not be $null
+        $minContent | Should not be $null
+        $mincontent.Contains("`n") | Should be $false
+        $minContent.Length -lt $script:samplecss01.Length | Should be $true
+
+        # close the streams as well
+        $result.SourceStream.Dispose()
+        $reader.Dispose()
+    }
+
+    It 'Can invoke Invoke-AlfredMinifyJavaScript with multiple files'{
+        $samplejs01 = 'minjs-multi\01.js'
+        $samplejs02 = 'minjs-multi\02.js'
+        $samplejs03 = 'minjs-multi\03.js'
+        Setup -File -Path $samplejs01 -Content $script:samplejs01
+        Setup -File -Path $samplejs02 -Content $script:samplejs02
+        Setup -File -Path $samplejs03 -Content $script:samplejs03
+        $path1 = Join-Path $TestDrive $samplejs01
+        $path2 = Join-Path $TestDrive $samplejs02
+        $path3 = Join-Path $TestDrive $samplejs03
+        $result = (Invoke-AlfredSource -sourceFiles $path1,$path2,$path3 | Invoke-AlfredMinifyJavaScript)
+
+        foreach($alfpipeobj in $result){
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
+            $minContent = $reader.ReadToEnd()
+
+            $alfpipeobj | Should not be null
+            $alfpipeobj.SourceStream | Should not be $null
+            $alfpipeobj.SourcePath | Should not be $null
+            $minContent | Should not be $null
+            $mincontent.Contains("`n") | Should be $false
+            # close the streams as well
+            $reader.Dispose()
+            $alfpipeobj.SourceStream.Dispose()
+        }
+    }
+}
