@@ -22,8 +22,7 @@ function EnsurePsbuildInstlled{
         # if psbuild is not available
         if(-Not (Get-Command "Invoke-MsBuild" -errorAction SilentlyContinue)){
             'Installing psbuild from [{0}]' -f $psbuildInstallUri | Write-Verbose
-            #(new-object Net.WebClient).DownloadString($psbuildInstallUri) | iex
-            & C:\Data\personal\mycode\psbuild\src\GetPSBuild.ps1
+            (new-object Net.WebClient).DownloadString($psbuildInstallUri) | iex
         }
         else{
             'psbuild already loaded' | Write-Verbose
