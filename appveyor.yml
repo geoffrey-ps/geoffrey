@@ -1,0 +1,12 @@
+os: Windows Server 2012
+
+environment:
+  NuGetApiKey:
+    secure: HFUEQanhaxHV/sRQYznQqg7LToxSGeIoSvrmyY29PJ1eDbXxUuYrEQ6MPAsZIQFT
+
+configuration: Release
+
+
+build_script:
+  - ps: .\appveyor.ps1
+

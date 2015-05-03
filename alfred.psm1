@@ -419,5 +419,7 @@ function Invoke-AlfredLess{
 }
 Set-Alias less Invoke-AlfredLess
 
+# todo we should update this to export on the correct items and use
+# $env:IsDeveloperMachine to expose to tests cases
 Export-ModuleMember -function *
 Export-ModuleMember -Alias *
