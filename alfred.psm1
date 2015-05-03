@@ -416,6 +416,7 @@ function Invoke-AlfredLess{
             # read the file and compile it
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $lessstream
             $source = $reader.ReadToEnd()
+            $reader.Dispose()
             $compiledText = [dotless.Core.Less]::Parse($source)
             $memStream = New-Object -TypeName 'System.IO.MemoryStream'
             [System.IO.StreamWriter]$stringwriter = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $memStream

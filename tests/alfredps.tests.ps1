@@ -486,3 +486,152 @@ elShip.className = shipping;
         }
     }
 }
+Describe 'Invoke-AlfredLess tests'{
+    # from http://lesscss.org/
+    $script:sampleless01 = @'
+@base: #f938ab;
+
+.box-shadow(@style, @c) when (iscolor(@c)) {
+  -webkit-box-shadow: @style @c;
+  box-shadow:         @style @c;
+}
+.box-shadow(@style, @alpha: 50%) when (isnumber(@alpha)) {
+  .box-shadow(@style, rgba(0, 0, 0, @alpha));
+}
+.box {
+  color: saturate(@base, 5%);
+  border-color: lighten(@base, 30%);
+  div { .box-shadow(0 0 5px, 30%) }
+}
+'@
+
+    # from http://designshack.net/articles/css/introducing-the-less-css-grid/
+    $script:sampleless02 = @'
+@columnWidth: 60px;
+@gutter: 10px;
+
+@allColumns: @columnWidth * 12;
+@allGutters: (@gutter * 12) * 2;
+@totalWidth: @allColumns + @allGutters;
+
+.theWidth (@theColumn: 1, @theGutter: 0) {
+  width: (@columnWidth * @theColumn) + (@gutter * @theGutter);
+}
+
+
+.grid_1 { .theWidth(1,0); }
+.grid_2 { .theWidth(2,2); }
+.grid_3 { .theWidth(3,4); }
+.grid_4 { .theWidth(4,6); }
+.grid_5 { .theWidth(5,8); }
+.grid_6 { .theWidth(6,10); }
+.grid_7 { .theWidth(7,12); }
+.grid_8 { .theWidth(8,14); }
+.grid_9 { .theWidth(9,16); }
+.grid_10 { .theWidth(10,18); }
+.grid_11 { .theWidth(11,20); }
+.grid_12 { .theWidth(12,22); }
+
+.column {
+    margin: 0 @gutter;
+    overflow: hidden;
+    float: left;
+    display: inline;
+}
+.row {
+    width: @totalWidth;
+    margin: 0 auto;
+    overflow: hidden;
+}
+.row .row {
+    margin: 0 (@gutter * -1);
+    width: auto;
+    display: inline-block;
+}
+'@
+
+    $script:sampleless03 = @'
+@main-text-color: red;
+@main-text-size: 12px;
+@main-text-bg: green;
+
+p {
+  color: @main-text-color;
+  font-size: @main-text-size;
+  background-color: @main-text-bg;
+}
+'@
+
+    It 'Can invoke Invoke-AlfredLess with a single file'{
+        $sampleless01path = 'less\less01.less'
+        Setup -File -Path $sampleless01path -Content $script:sampleless01
+
+        $path1 = Join-Path $TestDrive $sampleless01path
+        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredLess)
+        # ensure content is there
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        $compiledContent = $reader.ReadToEnd()
+
+        $result | Should not be null
+        $result.SourceStream | Should not be $null
+        $result.SourcePath | Should not be $null
+        $compiledContent | Should not be $null
+        $compiledContent.Contains('@') | Should be $false
+        $compiledContent.Length -lt $script:sampleless01.Length | Should be $true
+
+        # close the streams as well
+        $result.SourceStream.Dispose()
+        $reader.Dispose()
+    }
+
+    It 'Can invoke Invoke-AlfredLess with multiple files'{
+        $sampleless01path = 'less\less01.less'
+        $sampleless02path = 'less\less01.less'
+        $sampleless03path = 'less\less01.less'
+        Setup -File -Path $sampleless01path -Content $script:sampleless01
+        Setup -File -Path $sampleless02path -Content $script:sampleless02
+        Setup -File -Path $sampleless03path -Content $script:sampleless03
+
+        $path1 = Join-Path $TestDrive $sampleless01path
+        $path2 = Join-Path $TestDrive $sampleless01path
+        $path3 = Join-Path $TestDrive $sampleless01path
+        $result = (Invoke-AlfredSource -sourceFiles $path1,$path2,$path3 | Invoke-AlfredLess)
+        foreach($alfpipeobj in $result){
+            # ensure content is there
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
+            $compiledContent = $reader.ReadToEnd()
+
+            $alfpipeobj | Should not be null
+            $alfpipeobj.SourceStream | Should not be $null
+            $alfpipeobj.SourcePath | Should not be $null
+            $compiledContent | Should not be $null
+            $compiledContent.Contains('@') | Should be $false
+            $compiledContent.Length -lt $script:sampleless01.Length | Should be $true
+
+            # close the streams as well
+            $alfpipeobj.SourceStream.Dispose()
+            $reader.Dispose()
+        }
+    }
+
+}
+
+<#
+
+@base: #f938ab;
+
+.box-shadow(@style, @c) when (iscolor(@c)) {
+  -webkit-box-shadow: @style @c;
+  box-shadow:         @style @c;
+}
+.box-shadow(@style, @alpha: 50%) when (isnumber(@alpha)) {
+  .box-shadow(@style, rgba(0, 0, 0, @alpha));
+}
+.box {
+  color: saturate(@base, 5%);
+  border-color: lighten(@base, 30%);
+  div { .box-shadow(0 0 5px, 30%) }
+}
+
+
+#>
