@@ -264,3 +264,129 @@ Describe 'Invoke-AlfredDest tests'{
     }
 }
 
+Describe 'Invoke-AlfredMinifyCss tests'{
+    $script:samplecss01 = @'
+html {
+	margin: 0;
+	padding: 0;
+	}
+body {
+	font: 75% georgia, sans-serif;
+	line-height: 1.88889;
+	color: #555753;
+	background: #fff url(blossoms.jpg) no-repeat bottom right; 
+	margin: 0; 
+	padding: 0;
+	}
+'@
+    
+    $script:samplecss02 = @'
+a:hover, a:focus, a:active { 
+	text-decoration: underline; 
+	color: #9685BA;
+	}
+abbr {
+	border-bottom: none;
+	}
+
+
+/* specific divs */
+.page-wrapper { 
+	background: url(zen-bg.jpg) no-repeat top left; 
+	padding: 0 175px 0 110px;  
+	margin: 0; 
+	position: relative;
+	}
+
+.intro { 
+	min-width: 470px;
+	width: 100%;
+	}
+'@
+    $script:samplecss03 = @'
+header h1 { 
+	background: transparent url(h1.gif) no-repeat top left;
+	margin-top: 10px;
+	display: block;
+	width: 219px;
+	height: 87px;
+	float: left;
+
+	text-indent: 100%;
+	white-space: nowrap;
+	overflow: hidden;
+	}
+header h2 { 
+	background: transparent url(h2.gif) no-repeat top left; 
+	margin-top: 58px; 
+	margin-bottom: 40px; 
+	width: 200px; 
+	height: 18px; 
+	float: right;
+
+	text-indent: 100%;
+	white-space: nowrap;
+	overflow: hidden;
+	}
+header {
+	padding-top: 20px;
+	height: 87px;
+}
+
+.summary {
+	clear: both; 
+	margin: 20px 20px 20px 10px; 
+	width: 160px; 
+	float: left;
+	}
+'@
+
+    It 'Can invoke Invoke-AlfredMinifyCss with a single file'{
+        $samplecss01path = 'minifycss\sample01.css'
+        Setup -File -Path $samplecss01path -Content $script:samplecss01
+        $samplecss01path = 'minifycss\sample01.css'
+        $path1 = Join-Path $TestDrive $samplecss01path
+        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyCss)
+        # ensure content is there
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        $minContent = $reader.ReadToEnd()
+
+        $result | Should not be null
+        $result.SourceStream | Should not be $null
+        $result.SourcePath | Should not be $null
+        $minContent | Should not be $null
+        $mincontent.Contains("`n") | Should be $false
+        $minContent.Length -lt $script:samplecss01.Length | Should be $true
+
+        # close the streams as well
+        $result.SourceStream.Dispose()
+        $reader.Dispose()
+    }
+
+    It 'Can invoke Invoke-AlfredMinifyCss with multiple files'{
+        $samplecss01 = 'mincss-multi\01.css'
+        $samplecss02 = 'mincss-multi\02.css'
+        $samplecss03 = 'mincss-multi\03.css'
+        Setup -File -Path $samplecss01 -Content $script:samplecss01
+        Setup -File -Path $samplecss02 -Content $script:samplecss02
+        Setup -File -Path $samplecss03 -Content $script:samplecss03
+        $path1 = Join-Path $TestDrive $samplecss01
+        $path2 = Join-Path $TestDrive $samplecss02
+        $path3 = Join-Path $TestDrive $samplecss03
+        $result = (Invoke-AlfredSource -sourceFiles $path1,$path2,$path3 | Invoke-AlfredMinifyCss)
+
+        foreach($alfpipeobj in $result){
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
+            $minContent = $reader.ReadToEnd()
+
+            $alfpipeobj | Should not be null
+            $alfpipeobj.SourceStream | Should not be $null
+            $alfpipeobj.SourcePath | Should not be $null
+            $minContent | Should not be $null
+            $mincontent.Contains("`n") | Should be $false
+            # close the streams as well
+            $reader.Dispose()
+            $alfpipeobj.SourceStream.Dispose()
+        }
+    }
+}

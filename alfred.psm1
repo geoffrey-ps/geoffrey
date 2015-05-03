@@ -238,18 +238,11 @@ function Invoke-AlfredDest{
         [Parameter(Position=0)]
         [string[]]$destination
     )
-    begin{
-        $strmsToClose = @()
-    }
-    end{
-        foreach($stream in $strmsToClose){
-            $stream.Dispose() | Out-Null
-        }
-    }
     process{
     # todo: if the dest folder doesn't exist then create it
         $currentIndex = 0
         $destStreams = @{}
+        $strmsToClose = @()
         try{
             # see if we are writing to a single file or multiple
             foreach($currentStreamPipeObj in $sourceStreams){
@@ -339,14 +332,16 @@ function Invoke-AlfredMinifyCss{
             # minify the stream and return
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $cssstream
             $source = $reader.ReadToEnd()
+            $reader.Dispose()
+
             $resultText = $minifier.MinifyStyleSheet($source)
             # create a stream from the text
             $memStream = New-Object -TypeName 'System.IO.MemoryStream'
+
             [System.IO.StreamWriter]$stringwriter = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $memStream
             $stringwriter.Write($resultText) | Out-Null
             $stringwriter.Flush() | Out-Null
             $memStream.Position = 0
-
             # return the stream to the pipeline
             InternalGet-AlfredSourcePipelineObj -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
         }
