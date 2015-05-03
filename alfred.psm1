@@ -54,6 +54,10 @@ Set-Alias requires Invoke-AlfredRequires
 
 .PARAMETER list
     This will return the list of tasks in the file
+
+.PARAMETER list
+    Name(s) of the task(s) that should be executed. This will accept either a single
+    value or multiple values.
 #>
 function Invoke-Alfred{
     [cmdletbinding()]
@@ -62,21 +66,36 @@ function Invoke-Alfred{
         [System.IO.FileInfo]$scriptPath = '.\alfred-script.ps1',
 
         [Parameter(Position=1)]
-        [switch]$list
+        [switch]$list,
+
+        [Parameter(Position=2)]
+        [string[]]$taskName
     )
     begin{
         InternalInitalizeAlfred
     }
     process{
-        $runtasks = !($list)
+        $taskNamePassed = ($PSBoundParameters.ContainsKey('taskName'))
+        $runtasks = !($list -or $taskName)
+
         try{
-            $global:alfredcontext.RunTasks =(-not $list)
+            $global:alfredcontext.RunTasks =$runtasks
             # execute the script
-            & $scriptPath
+            . $scriptPath
 
             if($list){
                 # output the name of all the registered tasks
                 $global:alfredcontext.Tasks.Keys
+            }
+            elseif($taskNamePassed){ # if -list is passed don't execute anything
+                $runtaskpreviousvalue = $global:alfredcontext.RunTasks
+                try{
+                    $global:alfredcontext.RunTasks = $true
+                    Invoke-AlfredTask $taskName
+                }
+                finally{
+                    $global:alfredcontext.RunTasks = $runtaskpreviousvalue
+                }
             }
         }
         finally{
