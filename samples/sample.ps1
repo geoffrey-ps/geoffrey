@@ -19,8 +19,14 @@ $destfolder = (Join-Path $scriptDir 'dest')
 $sourcefolder = $scriptDir
 
 if(-not (Get-Module alfred)){
-    # install from github
-    (new-object Net.WebClient).DownloadString($installUri) | iex
+    # see if it's available locally
+    if(Test-Path (Join-Path $scriptDir '..\alfred.psm1')){
+        Import-Module (Join-Path $scriptDir '..\alfred.psm1') -DisableNameChecking
+    }
+    else{
+        # install from github
+        (new-object Net.WebClient).DownloadString($installUri) | iex
+    }
 }
 
 task init{
@@ -90,7 +96,8 @@ task demoless{
         dest "$destfolder\site-from-less.css"
 }
 
-task runall -dependsOn init,democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify,demoless
+#task runall -dependsOn init,democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify,demoless
+task runall -dependsOn democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify,demoless
 
 <#
 alfredrun democopy

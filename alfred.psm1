@@ -12,6 +12,7 @@ $global:alfredcontext = New-Object PSObject -Property @{
     HasBeenInitalized = $false
     Tasks = [hashtable]@{}
     RunTasks = $true
+    HasRunInitTask = $false
 }
 
 # later we will use this to check if it has been initalized and throw an error if not
@@ -20,8 +21,8 @@ function InternalInitalizeAlfred{
     param()
     process{
         $global:alfredcontext.Tasks = [hashtable]@{}
-        $global:alfredcontext.RunTasks = $true 
-        #$script:alfredhasbeeninitalized = $true
+        $global:alfredcontext.RunTasks = $true
+        $global:alfredcontext.HasBeenInitalized = $true
     }
 }
 
@@ -141,6 +142,16 @@ function Invoke-AlfredTask{
     )
     process{
         if($global:alfredcontext.RunTasks -eq $true){
+
+            # run the init task if not already
+            if($global:alfredcontext.HasRunInitTask -ne $true){
+                $initTask = $global:alfredcontext.Tasks.Item('init')
+                if( $initTask -ne $null -and ([string]::Compare($name,'init') -ne 0) ){
+                        Invoke-AlfredTask -name init
+                }
+                $global:alfredcontext.HasRunInitTask = $true
+            }
+
             foreach($taskname in $name){
                 # todo: skip executing if already executed
 
