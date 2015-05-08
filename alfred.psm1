@@ -3,10 +3,8 @@ param()
 
 Set-StrictMode -Version Latest
 
-function Get-ScriptDirectory
-{
-    $Invocation = (Get-Variable MyInvocation -Scope 1).Value
-    Split-Path $Invocation.MyCommand.Path
+function Get-ScriptDir{
+    split-path $MyInvocation.ScriptName
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
