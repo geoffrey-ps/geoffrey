@@ -70,6 +70,11 @@ Describe 'New-AlfredTask tests'{
 }
 
 Describe 'Invoke-AlfredTask tests'{
+    BeforeEach{
+        $global:alfredcontext.HasBeenInitalized = $false
+        InternalInitalizeAlfred
+    }
+
     It 'Can invoke a defined task'{
         [string]$name = 'namehere'
         $global:somevarhere=0
@@ -146,6 +151,22 @@ Describe 'Invoke-AlfredTask tests'{
         remove-variable -Name myothervar -scope global
         remove-variable -Name myothervar2 -scope global
     }
+
+    <# tests not verifying correctly yet
+    It 'a task will only run once' {
+        $global:counter = 0
+        New-AlfredTask -name mytask -defintion {$global:counter++ }
+        Invoke-AlfredTask mytask,mytask
+        $counter | Should be 2
+    }
+
+    It 'init will only run once' {
+        Mock Invoke-AlfredTask -ParameterFilter {$name -eq 'init'}{}
+
+        Invoke-AlfredTask init,init
+        Assert-MockCalled Invoke-AlfredTask -Exactly 1 -ParameterFilter {$name -eq 'init'}
+    }
+    #>
 }
 
 Describe 'Invoke-AlfredSource tests'{
@@ -616,22 +637,3 @@ p {
 
 }
 
-<#
-
-@base: #f938ab;
-
-.box-shadow(@style, @c) when (iscolor(@c)) {
-  -webkit-box-shadow: @style @c;
-  box-shadow:         @style @c;
-}
-.box-shadow(@style, @alpha: 50%) when (isnumber(@alpha)) {
-  .box-shadow(@style, rgba(0, 0, 0, @alpha));
-}
-.box {
-  color: saturate(@base, 5%);
-  border-color: lighten(@base, 30%);
-  div { .box-shadow(0 0 5px, 30%) }
-}
-
-
-#>

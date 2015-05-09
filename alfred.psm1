@@ -13,6 +13,7 @@ $global:alfredcontext = New-Object PSObject -Property @{
     Tasks = [hashtable]@{}
     RunTasks = $true
     HasRunInitTask = $false
+    TasksExecuted = New-Object System.Collections.Generic.List[System.String]
 }
 
 # later we will use this to check if it has been initalized and throw an error if not
@@ -23,6 +24,7 @@ function InternalInitalizeAlfred{
         $global:alfredcontext.Tasks = [hashtable]@{}
         $global:alfredcontext.RunTasks = $true
         $global:alfredcontext.HasBeenInitalized = $true
+        $global:alfredcontext.TasksExecuted.Clear()
     }
 }
 
@@ -142,20 +144,31 @@ function Invoke-AlfredTask{
     )
     process{
         if($global:alfredcontext.RunTasks -eq $true){
-
             # run the init task if not already
             if($global:alfredcontext.HasRunInitTask -ne $true){
+                # set this before calling the task to ensure the if only passes once
+                $global:alfredcontext.HasRunInitTask = $true
+
                 $initTask = $global:alfredcontext.Tasks.Item('init')
                 if( $initTask -ne $null -and ([string]::Compare($name,'init') -ne 0) ){
                         Invoke-AlfredTask -name init
                 }
-                $global:alfredcontext.HasRunInitTask = $true
             }
 
             foreach($taskname in $name){
-                # todo: skip executing if already executed
+                # skip executing the task if already executed
+                if($global:alfredcontext.TasksExecuted.Contains($taskname)){
+                    'Skipping task [{0}] because it has already been executed' -f $taskname | Write-Verbose
+                    #continue;
+                }
+
+                $global:alfredcontext.TasksExecuted.Add($taskname)
 
                 $tasktorun = $global:alfredcontext.Tasks[$taskname]
+
+                if($tasktorun -eq $null){
+                    throw ('Did not find a task with the name [{0}]' -f $taskname)
+                }
 
                 if($tasktorun.DependsOn -ne $null){
                     foreach($dtask in ($tasktorun.DependsOn)){
