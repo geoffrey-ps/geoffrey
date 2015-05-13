@@ -20,7 +20,7 @@ function EnsurePsbuildInstlled{
     )
     process{
         # if psbuild is not available
-        if(-Not (Get-Command "Invoke-MsBuild" -errorAction SilentlyContinue)){
+        if(-Not (Get-Command "Invoke-MsBuild" -errorAction SilentlyContinue) -or (-not ((Get-Command "Import-Pester" -errorAction SilentlyContinue)))){
             'Installing psbuild from [{0}]' -f $psbuildInstallUri | Write-Verbose
             (new-object Net.WebClient).DownloadString($psbuildInstallUri) | iex
         }
@@ -36,7 +36,7 @@ function Initalize{
     process{
         EnsurePsbuildInstlled
         # load pester
-        Import-Pester        
+        Import-Pester
     }
 }
 
