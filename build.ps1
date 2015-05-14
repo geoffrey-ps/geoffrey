@@ -40,6 +40,21 @@ function Initalize{
     }
 }
 
+function Build-Projects{
+    [cmdletbinding()]
+    param()
+    process {
+        $projectToBuild = Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx.sln'
+
+        if(-not (Test-Path $projectToBuild)){
+            throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
+        }
+
+        Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0
+
+    }
+}
+
 function Run-Tests{
     [cmdletbinding()]
     param()
@@ -71,6 +86,7 @@ function Run-Tests{
 
 # being script
 Initalize
+Build-Projects
 Run-Tests
 
 
