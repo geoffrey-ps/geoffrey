@@ -51,7 +51,7 @@ Set-Alias requires Invoke-AlfredRequires
     This is the command that users will use to run scripts.
 
 .PARAMETER scriptPath
-    Path to the script to execute, the default is '.\alfred-script.ps1'
+    Path to the script to execute, the default is '.\alfred.ps1'
 
 .PARAMETER list
     This will return the list of tasks in the file
@@ -64,7 +64,7 @@ function Invoke-Alfred{
     [cmdletbinding()]
     param(
         [Parameter(Position=0)]
-        [System.IO.FileInfo]$scriptPath = '.\alfred-script.ps1',
+        [System.IO.FileInfo]$scriptPath = '.\alfred.ps1',
 
         [Parameter(Position=1)]
         [switch]$list,
@@ -96,6 +96,13 @@ function Invoke-Alfred{
                 }
                 finally{
                     $global:alfredcontext.RunTasks = $runtaskpreviousvalue
+                }
+            }
+            else{
+                # execute the default task if it exists
+                $defaultTask = $global:alfredcontext.Tasks.Item('default')
+                if( $defaultTask -ne $null ){
+                    Invoke-AlfredTask -name default
                 }
             }
         }
@@ -151,7 +158,7 @@ function Invoke-AlfredTask{
 
                 $initTask = $global:alfredcontext.Tasks.Item('init')
                 if( $initTask -ne $null -and ([string]::Compare($name,'init') -ne 0) ){
-                        Invoke-AlfredTask -name init
+                    Invoke-AlfredTask -name init
                 }
             }
 
@@ -159,7 +166,7 @@ function Invoke-AlfredTask{
                 # skip executing the task if already executed
                 if($global:alfredcontext.TasksExecuted.Contains($taskname)){
                     'Skipping task [{0}] because it has already been executed' -f $taskname | Write-Verbose
-                    #continue;
+                    continue;
                 }
 
                 $global:alfredcontext.TasksExecuted.Add($taskname)
