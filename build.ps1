@@ -50,7 +50,7 @@ function Build-Projects{
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
         }
 
-        Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0
+        Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0 -properties @{'DeployExtension'='false'}
 
     }
 }
