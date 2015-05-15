@@ -40,21 +40,21 @@ task democoncat {
         dest "$destfolder\combined.css"
 }
 
-task demominifycss{
+task democssmin{
     dir "$sourcefolder\css\site.css" |
         src |
         cssmin |
         dest "$destfolder\site.min.css"
 }
 
-task demominifyjs{
+task demojsmin{
     dir "$sourcefolder\js\jquery-1.10.2.js" |
         src |
         jsmin |
         dest "$destfolder\jquery-1.10.2.min.js"
 }
 
-task demominifyjs2{
+task demojsmin2{
     $dest = (Join-Path $destfolder 'demominifyjs2')
     if(-not (Test-Path $dest)){
         New-Item -ItemType Directory -Path $dest | out-null
