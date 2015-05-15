@@ -1,6 +1,6 @@
 # Alfred - the PowerShell task runner for web
 
-![alfred logo](resources\alfred-face.png)
+![alfred logo](resources/alfred-face.png)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/7cqscntnaelr074q?svg=true)](https://ci.appveyor.com/project/sayedihashimi/alfredps)
 
