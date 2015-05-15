@@ -43,14 +43,14 @@ task democoncat {
 task demominifycss{
     dir "$sourcefolder\css\site.css" |
         src |
-        minifycss |
+        cssmin |
         dest "$destfolder\site.min.css"
 }
 
 task demominifyjs{
     dir "$sourcefolder\js\jquery-1.10.2.js" |
         src |
-        minifyjs |
+        jsmin |
         dest "$destfolder\jquery-1.10.2.min.js"
 }
 
@@ -61,14 +61,14 @@ task demominifyjs2{
     }
     dir "$sourcefolder\js\jquery-1.10.2.js","$sourcefolder\js\r.js" |
         src |
-        minifyjs |
+        jsmin |
         dest "$dest"
 }
 
 task combineandminify{
     dir "$sourcefolder\js\jquery-1.10.2.js","$sourcefolder\js\r.js" |
         src |
-        minifyjs |
+        jsmin |
         dest "$destfolder\combineminify.js"
 }
 
@@ -84,4 +84,4 @@ task demoless{
         dest "$destfolder\site-from-less.css"
 }
 
-task default -dependsOn democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify,demoless
+task default -dependsOn democopy,democoncat,democssmin,demojsmin,demojsmin2,combineandminify,demoless

@@ -52,35 +52,35 @@ task democoncat {
         dest "$destfolder\combined.css"
 }
 
-task demominifycss{
+task democssmin{
     dir "$sourcefolder\css\site.css" |
         src |
-        minifycss |
+        cssmin |
         dest "$destfolder\site.min.css"
 }
 
-task demominifyjs{
+task demojsmin{
     dir "$sourcefolder\js\jquery-1.10.2.js" |
         src |
-        minifyjs |
+        jsmin |
         dest "$destfolder\jquery-1.10.2.min.js"
 }
 
-task demominifyjs2{
+task demojsmin2{
     $dest = (Join-Path $destfolder 'demominifyjs2')
     if(-not (Test-Path $dest)){
         New-Item -ItemType Directory -Path $dest | out-null
     }
     dir "$sourcefolder\js\jquery-1.10.2.js","$sourcefolder\js\r.js" |
         src |
-        minifyjs |
+        jsmin |
         dest "$dest"
 }
 
 task combineandminify{
     dir "$sourcefolder\js\jquery-1.10.2.js","$sourcefolder\js\r.js" |
         src |
-        minifyjs |
+        jsmin |
         dest "$destfolder\combineminify.js"
 }
 
@@ -96,20 +96,9 @@ task demoless{
         dest "$destfolder\site-from-less.css"
 }
 
-#task runall -dependsOn init,democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify,demoless
-task runall -dependsOn democopy,democoncat,demominifycss,demominifyjs,demominifyjs2,combineandminify,demoless
+task default -dependsOn democopy,democoncat,democssmin,demojsmin,demojsmin2,combineandminify,demoless
 
-<#
-alfredrun democopy
-alfredrun democoncat
-alfredrun demominifycss
-alfredrun demominifyjs
-alfredrun demominifyjs2
-alfredrun combineandminify
-#>
-
-# this will run all the tasks
-alfredrun runall
+alfredrun default
 
 
 

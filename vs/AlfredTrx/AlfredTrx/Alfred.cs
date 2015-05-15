@@ -35,6 +35,12 @@ namespace AlfredTrx
                 string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 ModulePath = Path.Combine(localAppData, "Ligershark\\tools\\alfredps-pre\\alfred.psm1");
 
+                // you can override the location of the PSModule with this env var
+                string modulePathEnv = Environment.GetEnvironmentVariable("AlfredPsModulePath");
+                if (!string.IsNullOrWhiteSpace(modulePathEnv) && File.Exists(modulePathEnv)) {
+                    ModulePath = modulePathEnv;
+                }
+
                 //If we don't already have alfred installed, install it
                 if (!File.Exists(ModulePath))
                 {

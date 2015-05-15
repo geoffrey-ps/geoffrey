@@ -131,6 +131,11 @@ function New-AlfredTask{
         [Parameter(Position=2)]
         [string[]]$dependsOn
     )
+    begin{
+        if($global:alfredcontext.HasBeenInitalized -ne $true){
+            InternalInitalizeAlfred
+        }
+    }
     process{
         $result = New-Object psobject -Property @{
             Name = $name
@@ -298,6 +303,8 @@ function Invoke-AlfredDest{
                     $strContents = $reader.ReadToEnd()
                     $writer.Write($strContents) | Out-Null
                     $writer.Flush() | Out-Null
+                    $writer.Write("`r`n") | Out-Null
+                    $writer.Flush() | Out-Null
 
                     $currentStream.Flush() | Out-Null
 
@@ -376,7 +383,8 @@ function Invoke-AlfredMinifyCss{
         }
     }
 }
-Set-Alias minifycss Invoke-AlfredMinifyCss
+Set-Alias minifycss Invoke-AlfredMinifyCss -Description 'This alias is deprecated use cssmin instead'
+Set-Alias cssmin Invoke-AlfredMinifyCss
 
 function Invoke-AlfredMinifyJavaScript{
     [cmdletbinding()]
@@ -418,7 +426,8 @@ function Invoke-AlfredMinifyJavaScript{
         }
     }
 }
-Set-Alias minifyjs Invoke-AlfredMinifyJavaScript
+Set-Alias minifyjs Invoke-AlfredMinifyJavaScript -Description 'This alias is deprecated use jsmin instead'
+Set-Alias jsmin Invoke-AlfredMinifyJavaScript
 
 $script:lessassemblypath = $null
 function Invoke-AlfredLess{
