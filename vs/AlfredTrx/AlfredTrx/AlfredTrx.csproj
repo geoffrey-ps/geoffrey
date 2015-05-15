@@ -84,13 +84,14 @@
       <SubType>Designer</SubType>
     </VSCTCompile>
     <Resource Include="Resources\Verbose.png" />
-    <Resource Include="Resources\AlfredBatman.png" />
+    <Resource Include="Resources\AlfredLogo-31x31.png" />
     <Content Include="Resources\AlfredPackage.ico" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="VSPackage.resx">
       <MergeWithCTO>true</MergeWithCTO>
       <ManifestResourceName>VSPackage</ManifestResourceName>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

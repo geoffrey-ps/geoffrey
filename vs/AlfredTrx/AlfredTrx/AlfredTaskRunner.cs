@@ -26,7 +26,7 @@ namespace AlfredTrx
 
         public AlfredTaskRunner()
         {
-            _icon = new BitmapImage(new Uri(@"pack://application:,,,/AlfredTRX;component/Resources/AlfredBatman.png"));
+            _icon = new BitmapImage(new Uri(@"pack://application:,,,/AlfredTRX;component/Resources/AlfredLogo-31x31.png"));
             _options = new List<ITaskRunnerOption>();
             _options.Add(new TaskRunnerOption("Verbose", PkgCmdIDList.cmdidVerboseTaskRunners, GuidList.guidTaskRunnerExplorerExtensionsCmdSet, false, "-verbose"));
         }
