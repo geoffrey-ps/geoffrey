@@ -27,4 +27,28 @@ namespace AlfredTrx.Helpers
             return _rootNodeIcon;
         }
     }
+
+    public class TaskRunnerConfig : TaskRunnerConfigBase
+    {
+        private ImageSource _rootNodeIcon;
+
+        public TaskRunnerConfig(ITaskRunnerCommandContext context, ITaskRunnerNode hierarchy, IPersistTaskRunnerBindings persister)
+            : base(context, hierarchy)
+        {
+            BindingsPersister = persister;
+        }
+
+        public TaskRunnerConfig(ITaskRunnerCommandContext context, ITaskRunnerNode hierarchy, IPersistTaskRunnerBindings persister, ImageSource rootNodeIcon)
+            : this(context, hierarchy, persister)
+        {
+            _rootNodeIcon = rootNodeIcon;
+        }
+
+        protected override IPersistTaskRunnerBindings BindingsPersister { get; }
+
+        protected override ImageSource LoadRootNodeIcon()
+        {
+            return _rootNodeIcon;
+        }
+    }
 }
