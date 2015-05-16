@@ -152,12 +152,11 @@ Describe 'Invoke-AlfredTask tests'{
         remove-variable -Name myothervar2 -scope global
     }
 
-    <# tests not verifying correctly yet
-    It 'a task will only run once' {
+    It 'a task can modify existing variables' {
         $global:counter = 0
         New-AlfredTask -name mytask -defintion {$global:counter++ }
         Invoke-AlfredTask mytask,mytask
-        $counter | Should be 2
+        $counter | Should be 1
     }
 
     It 'init will only run once' {
@@ -166,7 +165,6 @@ Describe 'Invoke-AlfredTask tests'{
         Invoke-AlfredTask init,init
         Assert-MockCalled Invoke-AlfredTask -Exactly 1 -ParameterFilter {$name -eq 'init'}
     }
-    #>
 }
 
 Describe 'Invoke-AlfredSource tests'{

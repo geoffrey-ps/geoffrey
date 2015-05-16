@@ -192,8 +192,8 @@ function Invoke-AlfredTask{
                 }
 
                 if($tasktorun.Definition -ne $null){
-                    'Invoking task [{0}]' -f $name | Write-Verbose
-                    &(($global:alfredcontext.Tasks[$name]).Definition)
+                    'Invoking task [{0}]' -f $taskname | Write-Verbose
+                    & (($global:alfredcontext.Tasks[$taskname]).Definition)
                 }
             }
         }
