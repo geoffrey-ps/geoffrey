@@ -635,3 +635,115 @@ p {
 
 }
 
+Describe 'Invoke-Alfred tests'{
+    $sampleScript01 = @'
+    task default {
+        $global:defaultwasrun = $true
+    }
+'@
+
+    $sampleScript02 = @'
+    task mydep{
+        $global:mydepwasrun=$true
+    }
+    task mydep2{
+        $global:mydep2wasrun=$true
+    }
+    task mydep3{
+        $global:mydep3wasrun=$true
+    }
+    task default -dependsOn mydep,mydep2,mydep3
+'@
+
+    BeforeEach{
+        $global:defaultwasrun = $false
+        $global:mydepwasrun=$false
+        $global:mydep2wasrun=$false
+        $global:mydep3wasrun=$false
+    }
+
+    It 'Can run a file with just a default task in alfred.ps1'{
+        $sampleScript01path = 'invoke-alfred\01\alfred.ps1'
+        Setup -File -Path $sampleScript01path -Content $sampleScript01
+        [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
+
+        Push-Location
+        try{
+            Set-Location ($path1.Directory.FullName)
+            $global:defaultwasrun | Should be $false
+            Invoke-Alfred
+            $global:defaultwasrun | Should be $true
+        }
+        finally{
+            Pop-Location
+        }
+    }
+
+    It 'Can run a file with just a default task and pass in the name of the file'{
+        $sampleScript01path = 'invoke-alfred\02\sample.ps1'
+        Setup -File -Path $sampleScript01path -Content $sampleScript01
+        [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
+
+        Push-Location
+        try{
+            Set-Location ($path1.Directory.FullName)
+            $global:defaultwasrun | Should be $false
+            Invoke-Alfred -scriptPath $path1.FullName
+            $global:defaultwasrun | Should be $true
+        }
+        finally{
+            Pop-Location
+        }
+    }
+
+    It 'Can run a file with default that depends on other tasks'{
+        $sampleScript01path = 'invoke-alfred\03\alfred.ps1'
+        Setup -File -Path $sampleScript01path -Content $sampleScript02
+        [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
+
+        Push-Location
+        try{
+            Set-Location ($path1.Directory.FullName)
+            Invoke-Alfred
+            $global:mydepwasrun | Should be $true
+            $global:mydep2wasrun | Should be $true
+            $global:mydep3wasrun | Should be $true
+        }
+        finally{
+            Pop-Location
+        }
+    }
+
+    It 'Can run a file with default that depends on other tasks and pass in the script path'{
+        $sampleScript01path = 'invoke-alfred\04\alfred.ps1'
+        Setup -File -Path $sampleScript01path -Content $sampleScript02
+        [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
+
+        Invoke-Alfred -scriptPath $path1.FullName
+        $global:mydepwasrun | Should be $true
+        $global:mydep2wasrun | Should be $true
+        $global:mydep3wasrun | Should be $true
+
+    }
+
+    It 'can use -list to get task names'{
+        $sampleScript01path = 'invoke-alfred\05\alfred.ps1'
+        Setup -File -Path $sampleScript01path -Content $sampleScript02
+        [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
+
+        $taskNames = Invoke-Alfred -scriptPath $path1.FullName -list
+        $taskNames.Count | Should Be 4
+        $taskNames.Contains('default') | should be $true
+        $taskNames.Contains('mydep') | should be $true
+        $taskNames.Contains('mydep2') | should be $true
+        $taskNames.Contains('mydep3') | should be $true
+    }
+
+    It 'can execute a specific task by name'{
+        $sampleScript01path = 'invoke-alfred\06\alfred.ps1'
+        Setup -File -Path $sampleScript01path -Content $sampleScript02
+        [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
+
+        Invoke-Alfred -scriptPath $path1 -taskName mydep
+    }
+}
