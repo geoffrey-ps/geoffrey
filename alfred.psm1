@@ -8,13 +8,19 @@ function Get-ScriptDirectory{
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
+$global:alfredsettings = new-object psobject -Property @{
+    NuGetPowerShellMinModuleVersion = '0.2.1.1'
+    PrintTaskExecutionTimes = $true
+}
+if(Test-Path env:alfredprinttasktimes){
+    $global:alfredsettings.PrintTaskExecutionTimes =($env:alfredprinttasktimes)
+}
 $global:alfredcontext = New-Object PSObject -Property @{
     HasBeenInitalized = $false
     Tasks = [hashtable]@{}
     RunTasks = $true
     HasRunInitTask = $false
     TasksExecuted = New-Object System.Collections.Generic.List[System.String]
-    NuGetPowerShellMinModuleVersion = '0.2.1.1'
 }
 
 # later we will use this to check if it has been initalized and throw an error if not
@@ -33,7 +39,7 @@ function InternalInitalizeAlfred{
 function Ensure-NuGetPowerShellIsLoaded{
     [cmdletbinding()]
     param(
-        $nugetPsMinModVersion = $global:alfredcontext.NuGetPowerShellMinModuleVersion
+        $nugetPsMinModVersion = $global:alfredsettings.NuGetPowerShellMinModuleVersion
     )
     process{
         # see if nuget-powershell is available and load if not
@@ -202,6 +208,8 @@ function Invoke-AlfredTask{
             }
 
             foreach($taskname in $name){
+                [System.Diagnostics.Stopwatch]$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
                 # skip executing the task if already executed
                 if($global:alfredcontext.TasksExecuted.Contains($taskname)){
                     'Skipping task [{0}] because it has already been executed' -f $taskname | Write-Verbose
@@ -229,11 +237,47 @@ function Invoke-AlfredTask{
                     'Invoking task [{0}]' -f $taskname | Write-Verbose
                     & (($global:alfredcontext.Tasks[$taskname]).Definition)
                 }
+
+                $stopwatch.Stop()
+                Print-TaskExecutionInfo -taskname $taskname -milliseconds $stopwatch.ElapsedMilliseconds
             }
         }
     }
 }
 Set-Alias alfredrun Invoke-AlfredTask
+
+function Print-TaskExecutionInfo{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0)]
+        [string]$taskname,
+        [Parameter(Position=1)]
+        $milliseconds
+    )
+    process{
+        if($global:alfredsettings.PrintTaskExecutionTimes -eq $true){
+            $usewriteobj = $true
+
+            if(get-command Write-Host -ErrorAction SilentlyContinue){
+                try{
+                    '{0}:' -f $taskname | Write-Host -NoNewline -ForegroundColor Yellow -ErrorAction SilentlyContinue
+                    ' {0}' -f $milliseconds | Write-Host -ForegroundColor Green -NoNewline -ErrorAction SilentlyContinue
+                    ' milliseconds' | Write-Host -ErrorAction SilentlyContinue
+
+                    # if it gets here there was no error calling Write-Host
+                    $usewriteobj = $false
+                }
+                catch{
+                    # ignore and use write-object below
+                }
+            }
+
+            if($usewriteobj){
+                '{0}: {1} milliseconds' -f $taskname,$milliseconds | Write-Output
+            }
+        }
+    }
+}
 
 function InternalGet-AlfredSourcePipelineObj{
     [cmdletbinding()]
