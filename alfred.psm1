@@ -14,6 +14,7 @@ $global:alfredcontext = New-Object PSObject -Property @{
     RunTasks = $true
     HasRunInitTask = $false
     TasksExecuted = New-Object System.Collections.Generic.List[System.String]
+    NuGetPowerShellMinModuleVersion = '0.2.1.1'
 }
 
 # later we will use this to check if it has been initalized and throw an error if not
@@ -25,6 +26,39 @@ function InternalInitalizeAlfred{
         $global:alfredcontext.RunTasks = $true
         $global:alfredcontext.HasBeenInitalized = $true
         $global:alfredcontext.TasksExecuted.Clear()
+        Ensure-NuGetPowerShellIsLoaded
+    }
+}
+
+function Ensure-NuGetPowerShellIsLoaded{
+    [cmdletbinding()]
+    param(
+        $nugetPsMinModVersion = $global:alfredcontext.NuGetPowerShellMinModuleVersion
+    )
+    process{
+        # see if nuget-powershell is available and load if not
+        $nugetpsloaded = $false
+        if((get-command Get-NuGetPackage -ErrorAction SilentlyContinue)){
+            # check the module to ensure we have the correct version
+
+            $currentversion = (Get-Module -Name nuget-powershell).Version
+            if( ($currentversion -ne $null) -and ($currentversion.CompareTo([version]::Parse($nugetPsMinModVersion)) -ge 0 )){
+                $nugetpsloaded = $true
+            }
+        }
+
+        if(!$nugetpsloaded){
+            (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/ligershark/nuget-powershell/master/get-nugetps.ps1") | iex
+        }
+
+        # check to see that it was loaded
+        if((get-command Get-NuGetPackage -ErrorAction SilentlyContinue)){
+            $nugetpsloaded = $true
+        }
+
+        if(-not $nugetpsloaded){
+            throw ('Unable to load nuget-powershell, unknown error')
+        }
     }
 }
 
@@ -351,8 +385,8 @@ function Invoke-AlfredMinifyCss{
     begin{
         # ensure ajaxmin is loaded
         if([string]::IsNullOrEmpty($script:ajaxminpath)){
-            $script:ajaxminpath = (Get-NuGetPackage -name ajaxmin -version '5.14.5506.26202')
-            $assemblyPath = ((Join-Path $ajaxminpath 'bin\net40\AjaxMin.dll'))
+            $script:ajaxminpath = (Get-NuGetPackage -name ajaxmin -version '5.14.5506.26202' -binpath)
+            $assemblyPath = ((Join-Path $ajaxminpath 'net40\AjaxMin.dll'))
             'Loading AjaxMin from [{0}]' -f $assemblyPath | Write-Verbose
             if(-not (Test-Path $assemblyPath)){
                 throw ('Unable to locate ajaxmin at expected location [{0}]' -f $assemblyPath)
@@ -395,8 +429,8 @@ function Invoke-AlfredMinifyJavaScript{
     begin{
         # ensure ajaxmin is loaded
         if([string]::IsNullOrEmpty($script:ajaxminpath)){
-            $script:ajaxminpath = (Get-NuGetPackage -name ajaxmin -version '5.14.5506.26202')
-            $assemblyPath = ((Join-Path $ajaxminpath 'bin\net40\AjaxMin.dll'))
+            $script:ajaxminpath = (Get-NuGetPackage -name ajaxmin -version '5.14.5506.26202' -binpath)
+            $assemblyPath = ((Join-Path $ajaxminpath 'net40\AjaxMin.dll'))
             'Loading AjaxMin from [{0}]' -f $assemblyPath | Write-Verbose
             if(-not (Test-Path $assemblyPath)){
                 throw ('Unable to locate ajaxmin at expected location [{0}]' -f $assemblyPath)
@@ -438,8 +472,8 @@ function Invoke-AlfredLess{
     )
     begin{
         if([string]::IsNullOrEmpty($script:lessassemblypath)){
-            $script:lessassemblypath = (Get-NuGetPackage -name dotless -version '1.5.0-beta1')
-            $assemblyPath = ((Join-Path $script:lessassemblypath 'bin\dotless.Core.dll'))
+            $script:lessassemblypath = (Get-NuGetPackage -name dotless -version '1.5.0-beta1' -binpath)
+            $assemblyPath = ((Join-Path $script:lessassemblypath 'dotless.Core.dll'))
             'Loading dotless from [{0}]' -f $assemblyPath | Write-Verbose
             if(-not (Test-Path $assemblyPath)){
                 throw ('Unable to locate dotless at expected location [{0}]' -f $assemblyPath)
