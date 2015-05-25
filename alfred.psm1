@@ -9,7 +9,7 @@ function Get-ScriptDirectory{
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
 $global:alfredsettings = new-object psobject -Property @{
-    NuGetPowerShellMinModuleVersion = '0.2.1.1'
+    NuGetPowerShellMinModuleVersion = '0.2.3.1'
     PrintTaskExecutionTimes = $true
 }
 if(Test-Path env:alfredprinttasktimes){
