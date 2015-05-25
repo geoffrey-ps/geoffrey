@@ -11,6 +11,8 @@ $scriptDir = ((Get-ScriptDirectory) + "\")
 $global:alfredsettings = new-object psobject -Property @{
     NuGetPowerShellMinModuleVersion = '0.2.3.1'
     PrintTaskExecutionTimes = $true
+    AlfredPrintTasknameColor = 'Yellow'
+    AlfredPrintTaskTimeColor = 'Green'
 }
 if(Test-Path env:alfredprinttasktimes){
     $global:alfredsettings.PrintTaskExecutionTimes =($env:alfredprinttasktimes)
@@ -23,15 +25,37 @@ $global:alfredcontext = New-Object PSObject -Property @{
     TasksExecuted = New-Object System.Collections.Generic.List[System.String]
 }
 
+function InternalOverrideSettingsFromEnv{
+    [cmdletbinding()]
+    param(
+        $settingsObj = $global:alfredsettings
+    )
+    process{
+        if($settingsObj -eq $null){
+            return
+        }
+
+        $settingNames = ($settingsObj | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name)
+        foreach($name in $settingNames){
+            if(Test-Path "env:$name"){
+                $settingsObj.$name = (get-childitem "env:$name").Value
+            }
+        }
+    }
+}
+
 # later we will use this to check if it has been initalized and throw an error if not
 function InternalInitalizeAlfred{
     [cmdletbinding()]
     param()
     process{
+        InternalOverrideSettingsFromEnv
+
         $global:alfredcontext.Tasks = [hashtable]@{}
         $global:alfredcontext.RunTasks = $true
         $global:alfredcontext.HasBeenInitalized = $true
         $global:alfredcontext.TasksExecuted.Clear()
+
         Ensure-NuGetPowerShellIsLoaded
     }
 }
@@ -260,8 +284,8 @@ function Print-TaskExecutionInfo{
 
             if(get-command Write-Host -ErrorAction SilentlyContinue){
                 try{
-                    '{0}:' -f $taskname | Write-Host -NoNewline -ForegroundColor Yellow -ErrorAction SilentlyContinue
-                    ' {0}' -f $milliseconds | Write-Host -ForegroundColor Green -NoNewline -ErrorAction SilentlyContinue
+                    '{0}:' -f $taskname | Write-Host -NoNewline -ForegroundColor $global:alfredsettings.AlfredPrintTasknameColor -ErrorAction SilentlyContinue
+                    ' {0}' -f $milliseconds | Write-Host -ForegroundColor $global:alfredsettings.AlfredPrintTaskTimeColor -NoNewline -ErrorAction SilentlyContinue
                     ' milliseconds' | Write-Host -ErrorAction SilentlyContinue
 
                     # if it gets here there was no error calling Write-Host
