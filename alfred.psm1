@@ -514,7 +514,10 @@ function Invoke-AlfredMinifyJavaScript{
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
         $codeSettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CodeSettings'
         if(-not [string]::IsNullOrWhiteSpace($settingsJson)){
-            [Microsoft.Ajax.Utilities.CodeSettings]$codeSettings = ConvertFrom-Json $settingsJson
+            # convertfrom-json doesn't work in powershell < 5 for CodeSettings. Instead use json.net
+            Add-Type -Path (Join-Path (Get-NuGetPackage newtonsoft.json -version '6.0.8' -binpath) Newtonsoft.Json.dll)
+            $method = ([Newtonsoft.Json.JsonConvert].GetMethods()|Where-Object { ($_.Name -eq 'DeserializeObject') -and ($_.IsGenericMethod -eq $true) -and ($_.GetParameters().Length -eq 1)}).MakeGenericMethod('Microsoft.Ajax.Utilities.CodeSettings')
+            $codeSettings = $method.Invoke([Newtonsoft.Json.JsonConvert]::DeserializeObject,$settingsJson)
         }
     }
     process{
