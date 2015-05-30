@@ -72,7 +72,7 @@ Describe 'New-AlfredTask tests'{
 Describe 'Invoke-AlfredTask tests'{
     BeforeEach{
         $global:alfredcontext.HasBeenInitalized = $false
-        InternalInitalizeAlfred
+        Reset-Alfred
     }
 
     It 'Can invoke a defined task'{
