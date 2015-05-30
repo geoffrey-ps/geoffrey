@@ -45,7 +45,7 @@ function InternalOverrideSettingsFromEnv{
 }
 
 # later we will use this to check if it has been initalized and throw an error if not
-function InternalInitalizeAlfred{
+function Reset-Alfred{
     [cmdletbinding()]
     param()
     process{
@@ -137,7 +137,7 @@ function Invoke-Alfred{
         [string[]]$taskName
     )
     begin{
-        InternalInitalizeAlfred
+        Reset-Alfred
     }
     process{
         $taskNamePassed = ($PSBoundParameters.ContainsKey('taskName'))
@@ -197,7 +197,7 @@ function New-AlfredTask{
     )
     begin{
         if($global:alfredcontext.HasBeenInitalized -ne $true){
-            InternalInitalizeAlfred
+            Reset-Alfred
         }
     }
     process{
@@ -449,6 +449,8 @@ function Invoke-AlfredMinifyCss{
     param(
         [Parameter(ValueFromPipeline=$true)]
         [object[]]$sourceStreams  # type is AlfredSourcePipeObj
+
+
     )
     begin{
         # ensure ajaxmin is loaded
@@ -491,8 +493,11 @@ Set-Alias cssmin Invoke-AlfredMinifyCss
 function Invoke-AlfredMinifyJavaScript{
     [cmdletbinding()]
     param(
-        [Parameter(ValueFromPipeline=$true)]
-        [object[]]$sourceStreams  # type is AlfredSourcePipeObj
+        [Parameter(ValueFromPipeline=$true,Position=0)]
+        [object[]]$sourceStreams,  # type is AlfredSourcePipeObj
+
+        [Parameter(Position=1)]
+        [string]$settingsJson
     )
     begin{
         # ensure ajaxmin is loaded
@@ -507,6 +512,10 @@ function Invoke-AlfredMinifyJavaScript{
             Add-Type -Path $assemblyPath | Out-Null
         }
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
+        $codeSettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CodeSettings'
+        if(-not [string]::IsNullOrWhiteSpace($settingsJson)){
+            [Microsoft.Ajax.Utilities.CodeSettings]$codeSettings = ConvertFrom-Json $settingsJson
+        }
     }
     process{
         foreach($jsstreampipeobj in $sourceStreams){
@@ -515,7 +524,7 @@ function Invoke-AlfredMinifyJavaScript{
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $jsstream
             $source = $reader.ReadToEnd()
             $reader.Dispose()
-            $resultText = $minifier.MinifyJavaScript($source)
+            $resultText = $minifier.MinifyJavaScript($source,$codeSettings)
             # create a stream from the text
             $memStream = New-Object -TypeName 'System.IO.MemoryStream'
             [System.IO.StreamWriter]$stringwriter = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $memStream

@@ -29,6 +29,8 @@ if(-not (Get-Module alfred)){
     }
 }
 
+# todo: figure out a way to avoid this
+Reset-Alfred
 task init{
     if(-not (Test-Path $destfolder)){
         New-Item -Path $destfolder -ItemType Directory -Force
@@ -62,7 +64,7 @@ task democssmin{
 task demojsmin{
     dir "$sourcefolder\js\jquery-1.10.2.js" |
         src |
-        jsmin |
+        jsmin -settingsJson '{ "PreserveImportantComments":false}' |
         dest "$destfolder\jquery-1.10.2.min.js"
 }
 
