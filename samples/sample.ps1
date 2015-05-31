@@ -64,7 +64,7 @@ task democssmin{
 task demojsmin{
     dir "$sourcefolder\js\jquery-1.10.2.js" |
         src |
-        jsmin -settingsJson '{ "PreserveImportantComments":false}' |
+        jsmin -settingsJson '{ "PreserveImportantComments":false}' -AlwaysEscapeNonAscii $true |
         dest "$destfolder\jquery-1.10.2.min.js"
 }
 

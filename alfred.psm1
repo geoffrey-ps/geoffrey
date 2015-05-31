@@ -493,11 +493,37 @@ Set-Alias cssmin Invoke-AlfredMinifyCss
 function Invoke-AlfredMinifyJavaScript{
     [cmdletbinding()]
     param(
+        # note: if more params are added that are not options an additional if clause should be added
+        #       in the 'apply settings now' section
         [Parameter(ValueFromPipeline=$true,Position=0)]
         [object[]]$sourceStreams,  # type is AlfredSourcePipeObj
 
         [Parameter(Position=1)]
-        [string]$settingsJson
+        [string]$settingsJson,
+
+        # options for jsmin
+        [bool]$AlwaysEscapeNonAscii,
+        [bool]$AmdSupport,
+        [bool]$CollapseToLiteral,
+        [bool]$ConstStatementsMozilla,
+        [bool]$EvalLiteralExpressions,
+        [bool]$IgnoreConditionalCompilation,
+        [bool]$IgnorePreprocessorDefines,
+        [bool]$MacSafariQuirks,
+        [bool]$MinifyCode,
+        [bool]$PreprocessOnly,
+        [bool]$PreserveFunctionNames,
+        [bool]$PreserveImportantComments,
+        [bool]$QuoteObjectLiteralProperties,
+        [bool]$ReorderScopeDeclarations,
+        [bool]$RemoveFunctionExpressionNames,
+        [bool]$RemoveUnneededCode,
+        [bool]$StrictMode,
+        [bool]$StripDebugStatements,
+        [bool]$AllowEmbeddedAspNetBlocks,
+        [bool]$IgnoreAllErrors,
+        [int]$IndentSize,
+        [bool]$TermSemicolons
     )
     begin{
         # ensure ajaxmin is loaded
@@ -512,12 +538,24 @@ function Invoke-AlfredMinifyJavaScript{
             Add-Type -Path $assemblyPath | Out-Null
         }
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
-        $codeSettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CodeSettings'
+        [Microsoft.Ajax.Utilities.CodeSettings]$codeSettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CodeSettings'
         if(-not [string]::IsNullOrWhiteSpace($settingsJson)){
             # convertfrom-json doesn't work in powershell < 5 for CodeSettings. Instead use json.net
             Add-Type -Path (Join-Path (Get-NuGetPackage newtonsoft.json -version '6.0.8' -binpath) Newtonsoft.Json.dll)
             $method = ([Newtonsoft.Json.JsonConvert].GetMethods()|Where-Object { ($_.Name -eq 'DeserializeObject') -and ($_.IsGenericMethod -eq $true) -and ($_.GetParameters().Length -eq 1)}).MakeGenericMethod('Microsoft.Ajax.Utilities.CodeSettings')
             $codeSettings = $method.Invoke([Newtonsoft.Json.JsonConvert]::DeserializeObject,$settingsJson)
+        }
+
+        # apply settings now
+        $cspropnames = (($codeSettings.GetType().GetProperties()).Name)
+        foreach($inputParamName in $PSBoundParameters.Keys){
+            if( ([string]::Compare($inputParamName,'sourceStreams',$true) -ne 0) -and
+                ([string]::Compare($inputParamName,'settingsJson',$true) -ne 0) -and
+                ($cspropnames -contains $inputParamName)){
+                'Applying jsmin settings for [{0}] to value [{1}]' -f  $inputParamName,($PSBoundParameters.$inputParamName)| Write-Verbose
+                # apply the setting to the codeSettings object
+                $codeSettings.$inputParamName = ($PSBoundParameters.$inputParamName)
+            }
         }
     }
     process{
