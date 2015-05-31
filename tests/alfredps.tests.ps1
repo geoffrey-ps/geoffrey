@@ -457,6 +457,26 @@ var elShip = document.getElementById('shipping');
 // Set class name with value of shipping variable
 elShip.className = shipping;
 '@
+$script:samplejs04 = @'
+/*!
+Important comment here
+*/
+var today = new Date();
+var hourNow = today.getHours();
+var greeting;
+
+if (hourNow > 18) {
+    greeting = 'Good evening!';
+} else if (hourNow > 12) {
+    greeting = 'Good afternoon!';
+} else if (hourNow > 0) {
+    greeting = 'Good morning!';
+} else {
+    greeting = 'Welcome!';
+}
+
+document.write('<h3>' + greeting + '</h3>');
+'@
     It 'Can invoke Invoke-AlfredMinifyJavaScript with a single file'{
         $samplejs01path = 'minifyjs\sample01.js'
         Setup -File -Path $samplejs01path -Content $script:samplejs01
@@ -504,6 +524,28 @@ elShip.className = shipping;
             $alfpipeobj.SourceStream.Dispose()
         }
     }
+
+    It 'can pass settings via settingsJson'{
+        $samplejs01path = 'minifyjs\settings01.js'
+        Setup -File -Path $samplejs01path -Content $script:samplejs04
+        $path1 = Join-Path $TestDrive $samplejs01path
+        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyJavaScript -settingsJson '{ "PreserveImportantComments":false}')
+        # ensure content is there
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        $minContent = $reader.ReadToEnd()
+
+        $result | Should not be null
+        $result.SourceStream | Should not be $null
+        $result.SourcePath | Should not be $null
+        $minContent | Should not be $null
+        #$mincontent.Contains("`n") | Should be $false
+        $minContent.Length -lt $script:samplecss01.Length | Should be $true
+        $minContent.Contains('/*!') | Should be $false
+        # close the streams as well
+        $result.SourceStream.Dispose()
+        $reader.Dispose()
+    }
+
 }
 Describe 'Invoke-AlfredLess tests'{
     # from http://lesscss.org/
