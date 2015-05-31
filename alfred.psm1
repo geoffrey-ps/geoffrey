@@ -493,8 +493,8 @@ Set-Alias cssmin Invoke-AlfredMinifyCss
 function Invoke-AlfredMinifyJavaScript{
     [cmdletbinding()]
     param(
-        # note: if more params are added that are not options an additional if clause should be added
-        #       in the 'apply settings now' section
+        # note: parameters that have the same name as CodeSettings properties
+        #       will get passed to CodeSettings
         [Parameter(ValueFromPipeline=$true,Position=0)]
         [object[]]$sourceStreams,  # type is AlfredSourcePipeObj
 
@@ -538,6 +538,8 @@ function Invoke-AlfredMinifyJavaScript{
             Add-Type -Path $assemblyPath | Out-Null
         }
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
+    }
+    process{
         [Microsoft.Ajax.Utilities.CodeSettings]$codeSettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CodeSettings'
         if(-not [string]::IsNullOrWhiteSpace($settingsJson)){
             # convertfrom-json doesn't work in powershell < 5 for CodeSettings. Instead use json.net
@@ -549,16 +551,13 @@ function Invoke-AlfredMinifyJavaScript{
         # apply settings now
         $cspropnames = (($codeSettings.GetType().GetProperties()).Name)
         foreach($inputParamName in $PSBoundParameters.Keys){
-            if( ([string]::Compare($inputParamName,'sourceStreams',$true) -ne 0) -and
-                ([string]::Compare($inputParamName,'settingsJson',$true) -ne 0) -and
-                ($cspropnames -contains $inputParamName)){
-                'Applying jsmin settings for [{0}] to value [{1}]' -f  $inputParamName,($PSBoundParameters.$inputParamName)| Write-Verbose
+            if(($cspropnames -contains $inputParamName)){
+                'Applying jsmin settings for [{0}] to value [{1}]' -f  $inputParamName,($PSBoundParameters[$inputParamName])| Write-Verbose
                 # apply the setting to the codeSettings object
-                $codeSettings.$inputParamName = ($PSBoundParameters.$inputParamName)
+                ($codeSettings.$inputParamName) = ($PSBoundParameters[$inputParamName])
             }
         }
-    }
-    process{
+
         foreach($jsstreampipeobj in $sourceStreams){
             $jsstream = ($jsstreampipeobj.SourceStream)
             # minify the stream and return
