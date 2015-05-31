@@ -447,10 +447,27 @@ Set-Alias dest Invoke-AlfredDest
 function Invoke-AlfredMinifyCss{
     [cmdletbinding()]
     param(
-        [Parameter(ValueFromPipeline=$true)]
-        [object[]]$sourceStreams  # type is AlfredSourcePipeObj
+        [Parameter(Position=0,ValueFromPipeline=$true)]
+        [object[]]$sourceStreams,  # type is AlfredSourcePipeObj
 
+        [Parameter(Position=1)]
+        [string]$settingsJson,
 
+        [ValidateSet('Important','None','All','Hacks')]
+        [string]$CommentMode,
+
+        [ValidateSet('Strict','Hex','Major','NoSwap')]
+        [string]$ColorNames,
+
+        [bool]$MinifyExpressions,
+
+        [ValidateSet('FullStyleSheet','DeclarationList')]
+        [string]$CssType,
+
+        [bool]$RemoveEmptyBlocks,
+        [bool]$AllowEmbeddedAspNetBlocks,
+        [bool]$IgnoreAllErrors,
+        [int]$IndentSize
     )
     begin{
         # ensure ajaxmin is loaded
@@ -467,6 +484,23 @@ function Invoke-AlfredMinifyCss{
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
     }
     process{
+        [Microsoft.Ajax.Utilities.CssSettings]$csssettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CssSettings'
+        if(-not [string]::IsNullOrWhiteSpace($settingsJson)){
+            Add-Type -Path (Join-Path (Get-NuGetPackage newtonsoft.json -version '6.0.8' -binpath) Newtonsoft.Json.dll)
+            $method = ([Newtonsoft.Json.JsonConvert].GetMethods()|Where-Object { ($_.Name -eq 'DeserializeObject') -and ($_.IsGenericMethod -eq $true) -and ($_.GetParameters().Length -eq 1)}).MakeGenericMethod('Microsoft.Ajax.Utilities.CssSettings')
+            $csssettings = $method.Invoke([Newtonsoft.Json.JsonConvert]::DeserializeObject,$settingsJson)
+        }
+
+        # apply parameter settings now
+        $csspropnames = ($csssettings.GetType().GetProperties().Name)
+        foreach($inputParamName in $PSBoundParameters.Keys){
+            if(($csspropnames -contains $inputParamName)){
+                'Applying cssmin settings for [{0}] to value [{1}]' -f  $inputParamName,($PSBoundParameters[$inputParamName])| Write-Verbose
+                # apply the setting to the codeSettings object
+                ($csssettings.$inputParamName) = ($PSBoundParameters[$inputParamName])
+            }
+        }
+
         foreach($cssstreampipeobj in $sourceStreams){
             $cssstream = ($cssstreampipeobj.SourceStream)
             # minify the stream and return
@@ -474,7 +508,7 @@ function Invoke-AlfredMinifyCss{
             $source = $reader.ReadToEnd()
             $reader.Dispose()
 
-            $resultText = $minifier.MinifyStyleSheet($source)
+            $resultText = $minifier.MinifyStyleSheet($source,$csssettings)
             # create a stream from the text
             $memStream = New-Object -TypeName 'System.IO.MemoryStream'
 

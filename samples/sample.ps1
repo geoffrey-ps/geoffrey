@@ -57,7 +57,7 @@ task democoncat {
 task democssmin{
     dir "$sourcefolder\css\site.css" |
         src |
-        cssmin |
+        cssmin -CommentMode 'None' |
         dest "$destfolder\site.min.css"
 }
 

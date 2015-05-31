@@ -342,6 +342,23 @@ header {
 	float: left;
 	}
 '@
+    $script:samplecss04 = @'
+    /*!
+    Important comment here
+    */
+html {
+	margin: 0;
+	padding: 0;
+	}
+body {
+	font: 75% georgia, sans-serif;
+	line-height: 1.88889;
+	color: AntiqueWhite;
+	background: #fff url(blossoms.jpg) no-repeat bottom right;
+	margin: 0;
+	padding: 0;
+	}
+'@
 
     It 'Can invoke Invoke-AlfredMinifyCss with a single file'{
         $samplecss01path = 'minifycss\sample01.css'
@@ -390,6 +407,51 @@ header {
             $reader.Dispose()
             $alfpipeobj.SourceStream.Dispose()
         }
+    }
+
+    It 'Can invoke Invoke-AlfredMinifyCss and pass settingsJson'{
+        $samplecss04path = 'settingsjson\sample04.css'
+        Setup -File -Path $samplecss04path -Content $script:samplecss04
+        $path1 = Join-Path $TestDrive $samplecss04path
+        # CommentMode=1 is CssComments.None
+        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyCss -settingsJson '{ "CommentMode":  1 }' )
+        # ensure content is there
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        $minContent = $reader.ReadToEnd()
+
+        $result | Should not be null
+        $result.SourceStream | Should not be $null
+        $result.SourcePath | Should not be $null
+        $minContent | Should not be $null
+        $mincontent.Contains("`n") | Should be $false
+        $minContent.Length -lt $script:samplecss04.Length | Should be $true
+        $minContent.Contains('/*!') | Should be $false
+        # close the streams as well
+        $result.SourceStream.Dispose()
+        $reader.Dispose()
+    }
+
+    It 'Can invoke Invoke-AlfredMinifyCss and pass params to ajaminx01'{
+        $samplecss04path = 'settingsjson-02\sample04.css'
+        Setup -File -Path $samplecss04path -Content $script:samplecss04
+        $path1 = Join-Path $TestDrive $samplecss04path
+        # CommentMode=1 is CssComments.None
+        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyCss -CommentMode 'None' -ColorNames NoSwap )
+        # ensure content is there
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        $minContent = $reader.ReadToEnd()
+
+        $result | Should not be null
+        $result.SourceStream | Should not be $null
+        $result.SourcePath | Should not be $null
+        $minContent | Should not be $null
+        $mincontent.Contains("`n") | Should be $false
+        $minContent.Length -lt $script:samplecss04.Length | Should be $true
+        $minContent.Contains('/*!') | Should be $false
+        $minContent.ToLower().Contains('antiquewhite') | Should be $true
+        # close the streams as well
+        $result.SourceStream.Dispose()
+        $reader.Dispose()
     }
 }
 
