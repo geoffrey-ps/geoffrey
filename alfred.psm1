@@ -441,10 +441,60 @@ function Invoke-AlfredDest{
 }
 Set-Alias dest Invoke-AlfredDest
 
+[string]$script:ajaxminpath = $null
+<#
+.SYNOPSIS
+    This will minify the css content passed in sourceStreams
+
+.PARAMETER sourceStreams
+    Streams that should be minfied.
+
+.PARAMETER settingsJson
+    String containing a searlized CssSettings object which should be used for the settings.
+    When constructing the string you can create a CssSettings object with the desired settings
+    and then get the json for it with $cssSettings | ConvertTo-Json. You should only keep the
+    values in the json string that you want applied. Only writable fields should be included.
+    These settings are applied *before* the specific parameters that are passed in.
+
+.PARAMETER CommentMode
+    CommentMode value for CssSettings that is passed to the minifier
+
+.PARAMETER ColorNames
+    ColorNames value for CssSettings that is passed to the minifier
+
+.PARAMETER CommentMode
+    CommentMode value for CssSettings that is passed to the minifier
+
+.PARAMETER MinifyExpressions
+    MinifyExpressions value for CssSettings that is passed to the minifier
+
+.PARAMETER CssType
+    CssType value for CssSettings that is passed to the minifier
+
+.PARAMETER RemoveEmptyBlocks
+    RemoveEmptyBlocks value for CssSettings that is passed to the minifier
+
+.PARAMETER AllowEmbeddedAspNetBlocks
+    AllowEmbeddedAspNetBlocks value for CssSettings that is passed to the minifier
+
+.PARAMETER IgnoreAllErrors
+    IgnoreAllErrors value for CssSettings that is passed to the minifier
+
+.PARAMETER IndentSize
+    IndentSize value for CssSettings that is passed to the minifier
+
+.EXAMPLE
+    dir "$sourcefolder\css\site.css" | src | cssmin | dest "$destfolder\site.min.css"
+
+.EXAMPLE
+    dir "$sourcefolder\css\site.css" | src | cssmin -CommentMode 'None' | dest "$destfolder\site.min.css"
+
+.EXAMPLE
+    dir "$sourcefolder\css\site.css" | src | cssmin -settingsJson '{ "CommentMode":  1 }'  | dest "$destfolder\site.min.css"
+#>
+function Invoke-AlfredMinifyCss{
 # this will take in a set of streams, minify the css and then return new streams
 # this uses ajaxmin see https://ajaxmin.codeplex.com/wikipage?title=AjaxMin%20DLL
-[string]$script:ajaxminpath = $null
-function Invoke-AlfredMinifyCss{
     [cmdletbinding()]
     param(
         [Parameter(Position=0,ValueFromPipeline=$true)]
@@ -524,6 +574,72 @@ function Invoke-AlfredMinifyCss{
 Set-Alias minifycss Invoke-AlfredMinifyCss -Description 'This alias is deprecated use cssmin instead'
 Set-Alias cssmin Invoke-AlfredMinifyCss
 
+<#
+.SYNOPSIS
+    This will minify the JavaScript content passed in sourceStreams
+
+.PARAMETER sourceStreams
+    Streams that should be minfied.
+
+.PARAMETER settingsJson
+    String containing a searlized CodeSettings object which should be used for the settings.
+    When constructing the string you can create a CssSettings object with the desired settings
+    and then get the json for it with $codeSettings | ConvertTo-Json. You should only keep the
+    values in the json string that you want applied. Only writable fields should be included.
+    These settings are applied *before* the specific parameters that are passed in.
+
+.PARAMETER $AlwaysEscapeNonAscii
+    AllowEmbeddedAspNetBlocks value for CodeSettings that is passed to the minifier
+.PARAMETER $AmdSupport
+    AmdSupport value for CodeSettings that is passed to the minifier
+.PARAMETER $CollapseToLiteral
+    CollapseToLiteral value for CodeSettings that is passed to the minifier
+.PARAMETER $ConstStatementsMozilla
+    ConstStatementsMozilla value for CodeSettings that is passed to the minifier
+.PARAMETER $EvalLiteralExpressions
+    EvalLiteralExpressions value for CodeSettings that is passed to the minifier
+.PARAMETER $IgnoreConditionalCompilation
+    IgnoreConditionalCompilation value for CodeSettings that is passed to the minifier
+.PARAMETER $IgnorePreprocessorDefines
+    IgnorePreprocessorDefines value for CodeSettings that is passed to the minifier
+.PARAMETER $MacSafariQuirks
+    MacSafariQuirks value for CodeSettings that is passed to the minifier
+.PARAMETER $MinifyCode
+    MinifyCode value for CodeSettings that is passed to the minifier
+.PARAMETER $PreprocessOnly
+    PreprocessOnly value for CodeSettings that is passed to the minifier
+.PARAMETER $PreserveFunctionNames
+    PreserveFunctionNamesvalue for CodeSettings that is passed to the minifier
+.PARAMETER $PreserveImportantComments
+    PreserveImportantComments value for CodeSettings that is passed to the minifier
+.PARAMETER $QuoteObjectLiteralProperties
+    QuoteObjectLiteralPropertiesvalue for CodeSettings that is passed to the minifier
+.PARAMETER $ReorderScopeDeclarations
+    ReorderScopeDeclarationsvalue for CodeSettings that is passed to the minifier
+.PARAMETER $RemoveFunctionExpressionNames
+    RemoveFunctionExpressionNames value for CodeSettings that is passed to the minifier
+.PARAMETER $RemoveUnneededCode
+    RemoveUnneededCodevalue for CodeSettings that is passed to the minifier
+.PARAMETER $StrictMode
+    StrictModevalue for CodeSettings that is passed to the minifier
+.PARAMETER $StripDebugStatements
+    StripDebugStatements value for CodeSettings that is passed to the minifier
+.PARAMETER $AllowEmbeddedAspNetBlocks
+    AllowEmbeddedAspNetBlocksvalue for CodeSettings that is passed to the minifier
+.PARAMETER $IgnoreAllErrors
+    IgnoreAllErrors value for CodeSettings that is passed to the minifier
+.PARAMETER $IndentSize
+    IndentSize value for CodeSettings that is passed to the minifier
+.PARAMETER $TermSemicolons
+    TermSemicolons value for CodeSettings that is passed to the minifier
+
+.EXAMPLE
+    dir "$sourcefolder\js\jquery-1.10.2.js" | src | jsmin -settingsJson | dest "$destfolder\jquery-1.10.2.min.js"
+.EXAMPLE
+    dir "$sourcefolder\js\jquery-1.10.2.js" | src | jsmin -AlwaysEscapeNonAscii $true | dest "$destfolder\jquery-1.10.2.min.js"
+.EXAMPLE
+    dir "$sourcefolder\js\jquery-1.10.2.js" | src | jsmin -settingsJson '{ "PreserveImportantComments":false}' -AlwaysEscapeNonAscii $true | dest "$destfolder\jquery-1.10.2.min.js"
+#>
 function Invoke-AlfredMinifyJavaScript{
     [cmdletbinding()]
     param(
