@@ -75,7 +75,6 @@ function Ensure-NuGetPowerShellIsLoaded{
         $nugetpsloaded = $false
         if((get-command Get-NuGetPackage -ErrorAction SilentlyContinue)){
             # check the module to ensure we have the correct version
-
             $currentversion = (Get-Module -Name nuget-powershell).Version
             if( ($currentversion -ne $null) -and ($currentversion.CompareTo([version]::Parse($nugetPsMinModVersion)) -ge 0 )){
                 $nugetpsloaded = $true
@@ -86,12 +85,8 @@ function Ensure-NuGetPowerShellIsLoaded{
             (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/ligershark/nuget-powershell/master/get-nugetps.ps1") | iex
         }
 
-        # check to see that it was loaded
-        if((get-command Get-NuGetPackage -ErrorAction SilentlyContinue)){
-            $nugetpsloaded = $true
-        }
-
-        if(-not $nugetpsloaded){
+        # verify it was loaded
+        if(-not (get-command Get-NuGetPackage -ErrorAction SilentlyContinue)){
             throw ('Unable to load nuget-powershell, unknown error')
         }
     }
