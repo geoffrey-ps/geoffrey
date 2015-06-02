@@ -28,7 +28,11 @@ $global:alfredcontext = New-Object PSObject -Property @{
 function InternalOverrideSettingsFromEnv{
     [cmdletbinding()]
     param(
-        $settingsObj = $global:alfredsettings
+        [Parameter(Position=0)]
+        $settingsObj = $global:alfredsettings,
+
+        [Parameter(Position=1)]
+        [string]$prefix
     )
     process{
         if($settingsObj -eq $null){
@@ -37,8 +41,9 @@ function InternalOverrideSettingsFromEnv{
 
         $settingNames = ($settingsObj | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name)
         foreach($name in $settingNames){
-            if(Test-Path "env:$name"){
-                $settingsObj.$name = (get-childitem "env:$name").Value
+            $fullname = ('{0}{1}' -f $prefix,$name)
+            if(Test-Path "env:$fullname"){
+                $settingsObj.$name = ((get-childitem "env:$fullname").Value)
             }
         }
     }

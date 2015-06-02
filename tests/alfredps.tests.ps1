@@ -871,3 +871,74 @@ Describe 'Invoke-Alfred tests'{
         Invoke-Alfred -scriptPath $path1 -taskName mydep
     }
 }
+
+Describe 'InternalOverrideSettingsFromEnv tests'{
+    It 'can apply settings from env vars'{
+        $settingsObj = New-Object -TypeName psobject -Property @{
+            MySetting = 'default'
+            OtherSetting = 'other-default'
+        }
+
+        # create env vars
+        $mysettingvalue = 'mysetting'
+        $othersettingvalue ='othersetting'
+        $env:mysetting = $mysettingvalue
+        $env:othersetting = $othersettingvalue
+
+        InternalOverrideSettingsFromEnv -settingsObj $settingsObj
+        $settingsObj.MySetting | Should Be $mysettingvalue
+        $settingsObj.OtherSetting | Should Be $othersettingvalue
+
+        Remove-Item env:mysetting
+        Remove-Item env:othersetting
+    }
+
+    It 'can apply settings from env vars and use a prefix'{
+        $settingsObj = New-Object -TypeName psobject -Property @{
+            MySetting = 'default'
+            OtherSetting = 'other-default'
+        }
+
+        $prefix = 'unittest'
+        $mysettingkey='mysetting'
+        $othersettingkey='othersetting'
+
+        $mysettingvalue = 'mysetting-value'
+        $othersettingvalue ='othersetting-value'
+
+        $mysettingpath = ('env:{0}{1}' -f $prefix,$mysettingkey)
+        $othersettingpath = ('env:{0}{1}' -f $prefix,$othersettingkey)
+        Set-Item -Path $mysettingpath -Value $mysettingvalue
+        Set-Item -Path $othersettingpath -Value $othersettingvalue
+
+        InternalOverrideSettingsFromEnv -settingsObj $settingsObj -prefix $prefix
+        Get-Item -Path $mysettingpath | Select-Object -ExpandProperty Value | Should Be $mysettingvalue
+        Get-Item -Path $othersettingpath | Select-Object -ExpandProperty Value | Should Be $othersettingvalue
+
+        Remove-Item -Path $mysettingpath
+        Remove-Item -Path $othersettingpath
+    }
+}
+
+
+<#
+function InternalOverrideSettingsFromEnv{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0)]
+        $settingsObj = $global:alfredsettings
+    )
+    process{
+        if($settingsObj -eq $null){
+            return
+        }
+
+        $settingNames = ($settingsObj | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name)
+        foreach($name in $settingNames){
+            if(Test-Path "env:$name"){
+                $settingsObj.$name = (get-childitem "env:$name").Value
+            }
+        }
+    }
+}
+#>
