@@ -21,9 +21,16 @@ namespace AlfredTrx
             }
 
             int openIndex = line.IndexOf("<binding", hashIndex);
-            hashIndex = line.LastIndexOf('#', openIndex);
 
             if (openIndex < 0)
+            {
+                rangeInLine = new LineRange();
+                return false;
+            }
+
+            hashIndex = line.LastIndexOf('#', openIndex);
+
+            if (hashIndex < 0)
             {
                 rangeInLine = new LineRange();
                 return false;
