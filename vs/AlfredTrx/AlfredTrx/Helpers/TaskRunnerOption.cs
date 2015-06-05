@@ -15,20 +15,15 @@ namespace AlfredTrx.Helpers
             Id = commandId;
             Guid = commandGroup;
             Name = optionName;
-#if RC
             Enabled = isEnabled;
-#else
             Checked = isEnabled;
-#endif
         }
 
         public string Command { get; set; }
 
-#if RC
         public bool Enabled { get; set; }
-#else
+
         public bool Checked { get; set; }
-#endif
 
         public Guid Guid { get; }
 
