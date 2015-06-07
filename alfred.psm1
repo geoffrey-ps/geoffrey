@@ -60,7 +60,7 @@ function Reset-Alfred{
         $global:alfredcontext.RunTasks = $true
         $global:alfredcontext.HasBeenInitalized = $true
         $global:alfredcontext.TasksExecuted.Clear()
-
+        $global:alfredcontext.HasRunInitTask = $false
         Ensure-NuGetPowerShellIsLoaded
     }
 }

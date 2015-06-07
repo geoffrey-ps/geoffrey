@@ -16,11 +16,14 @@ namespace AlfredTrx.Helpers
             Guid = commandGroup;
             Name = optionName;
             Enabled = isEnabled;
+            Checked = isEnabled;
         }
 
         public string Command { get; set; }
 
         public bool Enabled { get; set; }
+
+        public bool Checked { get; set; }
 
         public Guid Guid { get; }
 
