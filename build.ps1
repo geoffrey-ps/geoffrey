@@ -1,5 +1,14 @@
-[cmdletbinding()]
-param()
+[cmdletbinding(DefaultParameterSetName='build')]
+param(
+    [Parameter(ParameterSetName='build',Position=0)]
+    [switch]$build,
+
+    [Parameter(ParameterSetName='build',Position=1)]
+    [switch]$cleanBeforeBuild,
+
+    [Parameter(ParameterSetName='clean',Position=0)]
+    [switch]$clean
+)
 
 Set-StrictMode -Version Latest
 
@@ -50,8 +59,29 @@ function Build-Projects{
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
         }
 
-        Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0 -properties @{'DeployExtension'='false'}
+        Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0 -configuration Release -properties @{'DeployExtension'='false'}
 
+    }
+}
+
+function Clean{
+    [cmdletbinding()]
+    param()
+    process {
+        [System.IO.FileInfo]$projectToBuild = Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx.sln'
+
+        if(-not (Test-Path $projectToBuild)){
+            throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
+        }
+
+        Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0 -targets Clean -properties @{'DeployExtension'='false'}
+
+        [System.IO.DirectoryInfo[]]$foldersToDelete = (Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx\bin\'),(Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx\obj\')
+        foreach($folder in $foldersToDelete){
+            if(Test-Path $folder){
+                Remove-Item $folder -Recurse
+            }
+        }
     }
 }
 
@@ -86,9 +116,16 @@ function Run-Tests{
 
 # being script
 Initalize
-Build-Projects
-Run-Tests
 
+if(-not $clean -and (-not $build)){
+    $build = $true
+}
 
+if($clean){
+    Clean
+}
 
-
+if($build){
+    Build-Projects
+    Run-Tests
+}
