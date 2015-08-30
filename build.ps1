@@ -76,7 +76,8 @@ function Clean{
 
         Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0 -targets Clean -properties @{'DeployExtension'='false'}
 
-        [System.IO.DirectoryInfo[]]$foldersToDelete = (Join-Path $scriptDir 'src\GeoffreyTrx\bin\'),(Join-Path $scriptDir 'src\GeoffreyTrx\obj\')
+        [System.IO.DirectoryInfo[]]$foldersToDelete = (Get-ChildItem $scriptDir -Include bin,obj -Recurse -Directory)
+
         foreach($folder in $foldersToDelete){
             if(Test-Path $folder){
                 Remove-Item $folder -Recurse -Force

@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22906.0
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoffreyTrx", "GeoffreyTrx\GeoffreyTrx.csproj", "{53BC05AE-CC31-4338-98CD-6F558D2CAB59}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Geoffry.Watch", "Geoffry.Watch\Geoffry.Watch.csproj", "{5B45F2D7-CB9C-4E7D-AC81-BD6B398EE0EC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoffrySampleConsoleApp", "GeoffrySampleConsoleApp\GeoffrySampleConsoleApp.csproj", "{F3D45867-D531-4F99-9DAF-CDFA52951052}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{53BC05AE-CC31-4338-98CD-6F558D2CAB59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53BC05AE-CC31-4338-98CD-6F558D2CAB59}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53BC05AE-CC31-4338-98CD-6F558D2CAB59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B45F2D7-CB9C-4E7D-AC81-BD6B398EE0EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B45F2D7-CB9C-4E7D-AC81-BD6B398EE0EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B45F2D7-CB9C-4E7D-AC81-BD6B398EE0EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B45F2D7-CB9C-4E7D-AC81-BD6B398EE0EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3D45867-D531-4F99-9DAF-CDFA52951052}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3D45867-D531-4F99-9DAF-CDFA52951052}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3D45867-D531-4F99-9DAF-CDFA52951052}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3D45867-D531-4F99-9DAF-CDFA52951052}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
