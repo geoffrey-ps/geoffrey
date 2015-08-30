@@ -10,10 +10,10 @@ using Microsoft.VisualStudio.TaskRunnerExplorer;
 namespace GeoffreyTrx
 {
     /// <summary>
-    /// Task runner for AlfredPS
+    /// Task runner for Geoffrey
     /// </summary>
-    [TaskRunnerExport("alfred.ps1")]
-	public class AlfredTaskRunner : ITaskRunner
+    [TaskRunnerExport("g.ps1")]
+	public class GeoffreyTaskRunner : ITaskRunner
 	{
         private static List<ITaskRunnerOption> _options;
 
@@ -24,9 +24,9 @@ namespace GeoffreyTrx
 
         private ImageSource _icon;
 
-        public AlfredTaskRunner()
+        public GeoffreyTaskRunner()
         {
-            _icon = new BitmapImage(new Uri(@"pack://application:,,,/AlfredTRX;component/Resources/AlfredLogo-31x31.png"));
+            _icon = new BitmapImage(new Uri(@"pack://application:,,,/GeoffreyTRX;component/Resources/GeoffreyLogo-31x31.png"));
             _options = new List<ITaskRunnerOption>();
             _options.Add(new TaskRunnerOption("Verbose", PkgCmdIDList.cmdidVerboseTaskRunners, GuidList.guidTaskRunnerExplorerExtensionsCmdSet, false, "-verbose"));
         }
@@ -43,7 +43,7 @@ namespace GeoffreyTrx
 		public async Task<ITaskRunnerConfig> ParseConfig(ITaskRunnerCommandContext context, string configPath)
 		{
             //Custom
-            await Alfred.EnsureInitialized(context);
+            await Geoffrey.EnsureInitialized(context);
             ITaskRunnerNode hierarchy = LoadHierarchy(configPath);
 
             //Common
@@ -53,12 +53,12 @@ namespace GeoffreyTrx
         private ITaskRunnerNode LoadHierarchy(string configPath)
         {
             //Custom
-            ITaskRunnerNode root = new TaskRunnerNode("Alfred");
+            ITaskRunnerNode root = new TaskRunnerNode("Geoffrey");
             string workingDirectory = Path.GetDirectoryName(configPath);
             
-            foreach (string taskName in Alfred.DiscoverTasksIn(configPath))
+            foreach (string taskName in Geoffrey.DiscoverTasksIn(configPath))
             {
-                string args = @"-NoProfile -NoLogo -NonInteractive -ExecutionPolicy RemoteSigned -Command ""Import-Module '" + Alfred.ModulePath + "' 3>$null; alfred -scriptPath '" + configPath + "' -taskName " + taskName + @"""";
+                string args = @"-NoProfile -NoLogo -NonInteractive -ExecutionPolicy RemoteSigned -Command ""Import-Module '" + Geoffrey.ModulePath + "' 3>$null; Invoke-Alfred -scriptPath '" + configPath + "' -taskName " + taskName + @"""";
 
                 ITaskRunnerNode task = new TaskRunnerNode(taskName, true)
                 {

@@ -786,8 +786,8 @@ Describe 'Invoke-Alfred tests'{
         $global:mydep3wasrun=$false
     }
 
-    It 'Can run a file with just a default task in alfred.ps1'{
-        $sampleScript01path = 'invoke-alfred\01\alfred.ps1'
+    It 'Can run a file with just a default task in g.ps1'{
+        $sampleScript01path = 'invoke-alfred\01\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript01
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -821,7 +821,7 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'Can run a file with default that depends on other tasks'{
-        $sampleScript01path = 'invoke-alfred\03\alfred.ps1'
+        $sampleScript01path = 'invoke-alfred\03\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -839,7 +839,7 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'Can run a file with default that depends on other tasks and pass in the script path'{
-        $sampleScript01path = 'invoke-alfred\04\alfred.ps1'
+        $sampleScript01path = 'invoke-alfred\04\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -851,7 +851,7 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'can use -list to get task names'{
-        $sampleScript01path = 'invoke-alfred\05\alfred.ps1'
+        $sampleScript01path = 'invoke-alfred\05\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -864,7 +864,7 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'can execute a specific task by name'{
-        $sampleScript01path = 'invoke-alfred\06\alfred.ps1'
+        $sampleScript01path = 'invoke-alfred\06\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 

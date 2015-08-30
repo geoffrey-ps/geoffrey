@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.TaskRunnerExplorer;
 
 namespace GeoffreyTrx
 {
-    public static class Alfred
+    public static class Geoffrey
     {
         private static Task<bool> _initTask;
         private static PowerShell _ps;
@@ -36,15 +36,15 @@ namespace GeoffreyTrx
                 ModulePath = Path.Combine(localAppData, "Ligershark\\tools\\geoffrey-pre\\geoffrey.psm1");
 
                 // you can override the location of the PSModule with this env var
-                string modulePathEnv = Environment.GetEnvironmentVariable("AlfredPsModulePath");
+                string modulePathEnv = Environment.GetEnvironmentVariable("GeoffreyPsModulePath");
                 if (!string.IsNullOrWhiteSpace(modulePathEnv) && File.Exists(modulePathEnv)) {
                     ModulePath = modulePathEnv;
                 }
 
-                //If we don't already have alfred installed, install it
+                //If we don't already have geoffrey installed, install it
                 if (!File.Exists(ModulePath))
                 {
-                    await InstallAlfredAsync();
+                    await InstallGeoffreyAsync();
                 }
 
                 _ps.Commands.Clear();
@@ -63,30 +63,30 @@ namespace GeoffreyTrx
         internal static IEnumerable<string> DiscoverTasksIn(string configPath)
         {
             _ps.Commands.Clear();
-            Command listCommand = new Command("alfred");
+            Command listCommand = new Command("geoffrey");
             listCommand.Parameters.Add("scriptPath", configPath);
             listCommand.Parameters.Add("list");
             _ps.Commands.AddCommand(listCommand);
             IEnumerable<PSObject> result = _ps.Invoke();
-            dynamic names = (dynamic)_ps.Runspace.SessionStateProxy.GetVariable("alfredcontext");
+            dynamic names = (dynamic)_ps.Runspace.SessionStateProxy.GetVariable("geoffreycontext");
             IEnumerable<string> taskNames = ((IEnumerable)names.Tasks.Keys).OfType<string>();
             return taskNames.Select(x => x.Trim()).OrderBy(x => x);
         }
 
-        private static async Task InstallAlfredAsync()
+        private static async Task InstallGeoffreyAsync()
         {
             HttpWebRequest request = WebRequest.CreateHttp("https://raw.githubusercontent.com/sayedihashimi/geoffrey/master/getgeoffrey.ps1");
-            request.UserAgent = "AlfredTRX-VS" + typeof(ITaskRunner).Assembly.GetName().Version;
+            request.UserAgent = "GeoffreyTRX-VS" + typeof(ITaskRunner).Assembly.GetName().Version;
             WebResponse response = await request.GetResponseAsync();
             Stream responseStream = response.GetResponseStream();
-            string alfredSource;
+            string geoffreySource;
 
             using (StreamReader reader = new StreamReader(responseStream))
             {
-                alfredSource = await reader.ReadToEndAsync();
+                geoffreySource = await reader.ReadToEndAsync();
             }
 
-            _ps.AddScript(alfredSource);
+            _ps.AddScript(geoffreySource);
             _ps.Invoke();
         }
     }

@@ -25,8 +25,8 @@
     <ProjectGuid>{53BC05AE-CC31-4338-98CD-6F558D2CAB59}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AlfredTrx</RootNamespace>
-    <AssemblyName>AlfredTrx</AssemblyName>
+    <RootNamespace>GeoffreyTrx</RootNamespace>
+    <AssemblyName>GeoffreyTrx</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
     <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
@@ -53,9 +53,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Alfred.cs" />
-    <Compile Include="AlfredPackage.cs" />
-    <Compile Include="AlfredTaskRunner.cs" />
+    <Compile Include="Geoffrey.cs" />
+    <Compile Include="GeoffreyPackage.cs" />
+    <Compile Include="GeoffreyTaskRunner.cs" />
     <Compile Include="GuidList.cs" />
     <Compile Include="Helpers\FileTextUtil.cs" />
     <Compile Include="Helpers\IPersistTaskRunnerBindings.cs" />
@@ -79,13 +79,13 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <VSCTCompile Include="AlfredPackage.vsct">
+    <VSCTCompile Include="GeoffreyPackage.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
     </VSCTCompile>
     <Resource Include="Resources\Verbose.png" />
-    <Resource Include="Resources\AlfredLogo-31x31.png" />
-    <Content Include="Resources\AlfredPackage.ico" />
+    <Resource Include="Resources\GeoffreyLogo-31x31.png" />
+    <Content Include="Resources\GeoffreyPackage.ico" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="VSPackage.resx">

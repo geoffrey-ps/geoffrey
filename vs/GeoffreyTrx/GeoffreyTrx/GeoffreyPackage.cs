@@ -1,5 +1,5 @@
 ﻿//------------------------------------------------------------------------------
-// <copyright file="AlfredPackage.cs" company="Company">
+// <copyright file="GeoffreyPackage.cs" company="Company">
 //     Copyright (c) Company.  All rights reserved.
 // </copyright>
 //------------------------------------------------------------------------------
@@ -31,21 +31,21 @@ namespace GeoffreyTrx
     /// </remarks>
     [PackageRegistration(UseManagedResourcesOnly = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
-    [Guid(AlfredPackage.PackageGuidString)]
+    [Guid(GeoffreyPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideAutoLoad(UIContextGuids80.SolutionExists)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    public sealed class AlfredPackage : Package
+    public sealed class GeoffreyPackage : Package
     {
         /// <summary>
-        /// AlfredPackage GUID string.
+        /// GeoffreyPackage GUID string.
         /// </summary>
         public const string PackageGuidString = "ad0ed9ed-2840-498c-a2f2-8c314c694baf";
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AlfredPackage"/> class.
+        /// Initializes a new instance of the <see cref="GeoffreyPackage"/> class.
         /// </summary>
-        public AlfredPackage()
+        public GeoffreyPackage()
         {
             // Inside this method you can place any initialization code that does not require
             // any Visual Studio service because at this point the package object is created but

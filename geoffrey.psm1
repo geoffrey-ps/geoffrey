@@ -115,7 +115,7 @@ Set-Alias requires Invoke-AlfredRequires
     This is the command that users will use to run scripts.
 
 .PARAMETER scriptPath
-    Path to the script to execute, the default is '.\alfred.ps1'
+    Path to the script to execute, the default is '.\g.ps1'
 
 .PARAMETER list
     This will return the list of tasks in the file
@@ -128,7 +128,7 @@ function Invoke-Alfred{
     [cmdletbinding()]
     param(
         [Parameter(Position=0)]
-        [System.IO.FileInfo]$scriptPath = '.\alfred.ps1',
+        [System.IO.FileInfo]$scriptPath = '.\g.ps1',
 
         [Parameter(Position=1)]
         [switch]$list,

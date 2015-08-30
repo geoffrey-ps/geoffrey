@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="AlfredTrx.Mike Lorbetske.9f831acb-5369-4158-a2f0-8405c5d0006c" Version="1.0" Language="en-US" Publisher="Mike Lorbetske" />
-    <DisplayName>AlfredTrx</DisplayName>
+    <Identity Id="GeoffreyTrx.Mike Lorbetske.9f831acb-5369-4158-a2f0-8405c5d0006c" Version="1.0" Language="en-US" Publisher="Mike Lorbetske" />
+    <DisplayName>GeoffreyTrx</DisplayName>
     <Description>Empty VSIX Project.</Description>
   </Metadata>
   <Installation>
