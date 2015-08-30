@@ -2,7 +2,7 @@
 
 ![geoffrey logo](resources/geoffrey-face.png)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/7cqscntnaelr074q?svg=true)](https://ci.appveyor.com/project/sayedihashimi/geoffrey)
+[![Build status](https://ci.appveyor.com/api/projects/status/67if3jcubral0wfh?svg=true)](https://ci.appveyor.com/project/sayedihashimi/geoffrey)
 
 ### Initial concept
 
