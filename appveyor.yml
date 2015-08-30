@@ -11,4 +11,4 @@ build_script:
   - ps: .\appveyor.ps1
 
 artifacts:
-  - path: 'vs\AlfredTrx\AlfredTrx\bin\Release\*'
+  - path: 'vs\GeoffreyTrx\GeoffreyTrx\bin\Release\*'

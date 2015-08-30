@@ -53,7 +53,7 @@ function Build-Projects{
     [cmdletbinding()]
     param()
     process {
-        $projectToBuild = Join-Path $scriptDir 'vs\AlfredTrx\GeoffreyTrx.sln'
+        $projectToBuild = Join-Path $scriptDir 'vs\GeoffreyTrx\GeoffreyTrx.sln'
 
         if(-not (Test-Path $projectToBuild)){
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
@@ -68,7 +68,7 @@ function Clean{
     [cmdletbinding()]
     param()
     process {
-        [System.IO.FileInfo]$projectToBuild = Join-Path $scriptDir 'vs\AlfredTrx\GeoffreyTrx.sln'
+        [System.IO.FileInfo]$projectToBuild = Join-Path $scriptDir 'vs\GeoffreyTrx\GeoffreyTrx.sln'
 
         if(-not (Test-Path $projectToBuild)){
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
@@ -76,7 +76,7 @@ function Clean{
 
         Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0 -targets Clean -properties @{'DeployExtension'='false'}
 
-        [System.IO.DirectoryInfo[]]$foldersToDelete = (Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx\bin\'),(Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx\obj\')
+        [System.IO.DirectoryInfo[]]$foldersToDelete = (Join-Path $scriptDir 'vs\GeoffreyTrx\GeoffreyTrx\bin\'),(Join-Path $scriptDir 'vs\GeoffreyTrx\GeoffreyTrx\obj\')
         foreach($folder in $foldersToDelete){
             if(Test-Path $folder){
                 Remove-Item $folder -Recurse -Force
