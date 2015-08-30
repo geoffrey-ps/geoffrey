@@ -53,7 +53,7 @@ function Build-Projects{
     [cmdletbinding()]
     param()
     process {
-        $projectToBuild = Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx.sln'
+        $projectToBuild = Join-Path $scriptDir 'vs\AlfredTrx\GeoffreyTrx.sln'
 
         if(-not (Test-Path $projectToBuild)){
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
@@ -68,7 +68,7 @@ function Clean{
     [cmdletbinding()]
     param()
     process {
-        [System.IO.FileInfo]$projectToBuild = Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx.sln'
+        [System.IO.FileInfo]$projectToBuild = Join-Path $scriptDir 'vs\AlfredTrx\GeoffreyTrx.sln'
 
         if(-not (Test-Path $projectToBuild)){
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
