@@ -79,7 +79,7 @@ function Clean{
         [System.IO.DirectoryInfo[]]$foldersToDelete = (Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx\bin\'),(Join-Path $scriptDir 'vs\AlfredTrx\AlfredTrx\obj\')
         foreach($folder in $foldersToDelete){
             if(Test-Path $folder){
-                Remove-Item $folder -Recurse
+                Remove-Item $folder -Recurse -Force
             }
         }
     }
