@@ -1,7 +1,7 @@
 ﻿using System.Windows.Media;
 using Microsoft.VisualStudio.TaskRunnerExplorer;
 
-namespace AlfredTrx.Helpers
+namespace GeoffreyTrx.Helpers
 {
     public class TaskRunnerConfig<TBindingsPersister> : TaskRunnerConfigBase
         where TBindingsPersister : class, IPersistTaskRunnerBindings, new()

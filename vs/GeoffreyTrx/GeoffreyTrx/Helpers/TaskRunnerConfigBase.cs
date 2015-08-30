@@ -2,7 +2,7 @@
 using System.Windows.Media;
 using Microsoft.VisualStudio.TaskRunnerExplorer;
 
-namespace AlfredTrx.Helpers
+namespace GeoffreyTrx.Helpers
 {
     public abstract class TaskRunnerConfigBase : ITaskRunnerConfig
     {

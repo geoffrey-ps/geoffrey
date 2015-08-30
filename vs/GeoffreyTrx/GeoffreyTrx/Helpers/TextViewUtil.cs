@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
 
-namespace AlfredTrx.Helpers
+namespace GeoffreyTrx.Helpers
 {
     public static class TextViewUtil
     {

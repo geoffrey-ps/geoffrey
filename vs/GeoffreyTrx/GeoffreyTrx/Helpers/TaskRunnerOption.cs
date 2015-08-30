@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AlfredTrx.Helpers
+namespace GeoffreyTrx.Helpers
 {
     public class TaskRunnerOption : ITaskRunnerOption
     {

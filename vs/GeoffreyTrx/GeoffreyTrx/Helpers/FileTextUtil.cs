@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace AlfredTrx.Helpers
+namespace GeoffreyTrx.Helpers
 {
     internal class FileTextUtil : ITextUtil
     {

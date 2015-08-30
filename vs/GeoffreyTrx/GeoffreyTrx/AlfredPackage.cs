@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
-namespace AlfredTrx
+namespace GeoffreyTrx
 {
     /// <summary>
     /// This is the class that implements the package exposed by this assembly.

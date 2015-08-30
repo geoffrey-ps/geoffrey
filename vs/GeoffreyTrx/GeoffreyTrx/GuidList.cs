@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AlfredTrx
+namespace GeoffreyTrx
 {
     public static class GuidList
     {

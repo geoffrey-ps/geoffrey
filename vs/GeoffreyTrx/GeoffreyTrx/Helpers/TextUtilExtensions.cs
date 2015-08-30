@@ -1,4 +1,4 @@
-﻿namespace AlfredTrx.Helpers
+﻿namespace GeoffreyTrx.Helpers
 {
     public static class TextUtilExtensions
     {

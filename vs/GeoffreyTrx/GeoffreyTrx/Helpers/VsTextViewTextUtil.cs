@@ -3,7 +3,7 @@ using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.TextManager.Interop;
 
-namespace AlfredTrx.Helpers
+namespace GeoffreyTrx.Helpers
 {
     internal class VsTextViewTextUtil : ITextUtil
     {

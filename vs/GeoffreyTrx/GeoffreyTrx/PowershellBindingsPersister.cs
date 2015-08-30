@@ -1,6 +1,6 @@
-﻿using AlfredTrx.Helpers;
+﻿using GeoffreyTrx.Helpers;
 
-namespace AlfredTrx
+namespace GeoffreyTrx
 {
     //One per file type
     public class PowershellBindingsPersister : IPersistTaskRunnerBindings

@@ -4,10 +4,10 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using AlfredTrx.Helpers;
+using GeoffreyTrx.Helpers;
 using Microsoft.VisualStudio.TaskRunnerExplorer;
 
-namespace AlfredTrx
+namespace GeoffreyTrx
 {
     /// <summary>
     /// Task runner for AlfredPS

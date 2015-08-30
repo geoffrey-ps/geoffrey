@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TextManager.Interop;
 
-namespace AlfredTrx.Helpers
+namespace GeoffreyTrx.Helpers
 {
     public static class PersistTaskRunnerBindingsExtensions
     {

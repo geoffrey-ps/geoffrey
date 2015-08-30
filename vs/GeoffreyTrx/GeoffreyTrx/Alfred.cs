@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TaskRunnerExplorer;
 
-namespace AlfredTrx
+namespace GeoffreyTrx
 {
     public static class Alfred
     {
