@@ -8,7 +8,7 @@ $scriptDir = ((Get-ScriptDirectory) + "\")
 function Load-AlfredModule{
     [cmdletbinding()]
     param(
-        [string]$alfredModulePath = (Join-Path $scriptDir '..\alfred.psm1')
+        [string]$alfredModulePath = (Join-Path $scriptDir '..\geoffrey.psm1')
     )
     process{
         $env:IsDeveloperMachine = $true

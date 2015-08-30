@@ -100,7 +100,7 @@ function Run-Tests{
                 $pesterArgs.Add('-EnableExit',$true)
             }
             if($env:PesterEnableCodeCoverage -eq $true){
-                $pesterArgs.Add('-CodeCoverage','..\alfred.psm1')
+                $pesterArgs.Add('-CodeCoverage','..\geoffrey.psm1')
             }
 
             $pesterResult = Invoke-Pester @pesterArgs

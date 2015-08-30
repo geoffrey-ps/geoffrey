@@ -33,7 +33,7 @@ namespace AlfredTrx
                 _ps.Commands.Clear();
 
                 string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                ModulePath = Path.Combine(localAppData, "Ligershark\\tools\\alfredps-pre\\alfred.psm1");
+                ModulePath = Path.Combine(localAppData, "Ligershark\\tools\\geoffrey-pre\\geoffrey.psm1");
 
                 // you can override the location of the PSModule with this env var
                 string modulePathEnv = Environment.GetEnvironmentVariable("AlfredPsModulePath");
@@ -75,7 +75,7 @@ namespace AlfredTrx
 
         private static async Task InstallAlfredAsync()
         {
-            HttpWebRequest request = WebRequest.CreateHttp("https://raw.githubusercontent.com/sayedihashimi/alfredps/master/getalfred.ps1");
+            HttpWebRequest request = WebRequest.CreateHttp("https://raw.githubusercontent.com/sayedihashimi/geoffrey/master/getgeoffrey.ps1");
             request.UserAgent = "AlfredTRX-VS" + typeof(ITaskRunner).Assembly.GetName().Version;
             WebResponse response = await request.GetResponseAsync();
             Stream responseStream = response.GetResponseStream();

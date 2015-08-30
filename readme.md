@@ -1,17 +1,17 @@
-# Alfred - the PowerShell task runner for web
+# geoffrey - the PowerShell task runner for web
 
-![alfred logo](resources/alfred-face.png)
+![geoffrey logo](resources/geoffrey-face.png)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/7cqscntnaelr074q?svg=true)](https://ci.appveyor.com/project/sayedihashimi/alfredps)
+[![Build status](https://ci.appveyor.com/api/projects/status/7cqscntnaelr074q?svg=true)](https://ci.appveyor.com/project/sayedihashimi/geoffrey)
 
 ### Initial concept
 
 ```powershell
-$alfred = (new-object Net.WebClient).DownloadString("http://alfredps.com/getalfred.ps1") | iex
+$geoffrey = (new-object Net.WebClient).DownloadString("http://getgeoffrey.com/getgeoffrey.ps1") | iex
 
-requires alfred-less
-requires alfred-coffee
-requires alfred-concat
+requires geoffrey-less
+requires geoffrey-coffee
+requires geoffrey-concat
 
 task copy {
     src './less/site.less' |         # gets site.less (i think it would return Stream based objects but not sure)

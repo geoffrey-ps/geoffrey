@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS  
-	Sample for using alfredps.
+	Sample for using geoffrey.
 
 .PARAMETER importFromSource
     If set this will import from the local source
@@ -24,9 +24,9 @@ task init{
 
     Get-ChildItem $destfolder -Recurse -File | Remove-Item
 
-    requires alfred-less
-    requires alfred-coffee
-    requires alfred-sass
+    requires geoffrey-less
+    requires geoffrey-coffee
+    requires geoffrey-sass
 }
 
 task democopy {

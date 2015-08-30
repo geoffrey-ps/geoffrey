@@ -1,13 +1,13 @@
 ﻿<#
 .SYNOPSIS  
-	Sample for using alfredps.
+	Sample for using geoffrey.
 
 .PARAMETER importFromSource
     If set this will import from the local source
 #>
 [cmdletbinding()]
 param(
-    [string]$installUri='https://raw.githubusercontent.com/sayedihashimi/alfredps/master/getalfred.ps1'
+    [string]$installUri='https://raw.githubusercontent.com/sayedihashimi/geoffrey/master/getgeoffrey.ps1'
 )
 
 function Get-ScriptDirectory{
@@ -18,10 +18,10 @@ $scriptDir = ((Get-ScriptDirectory) + "\")
 $destfolder = (Join-Path $scriptDir 'dest')
 $sourcefolder = $scriptDir
 
-if(-not (Get-Module alfred)){
+if(-not (Get-Module geoffrey)){
     # see if it's available locally
-    if(Test-Path (Join-Path $scriptDir '..\alfred.psm1')){
-        Import-Module (Join-Path $scriptDir '..\alfred.psm1') -DisableNameChecking
+    if(Test-Path (Join-Path $scriptDir '..\geoffrey.psm1')){
+        Import-Module (Join-Path $scriptDir '..\geoffrey.psm1') -DisableNameChecking
     }
     else{
         # install from github
@@ -38,9 +38,9 @@ task init{
 
     Get-ChildItem $destfolder -Recurse -File | Remove-Item
 
-    requires alfred-less
-    requires alfred-coffee
-    requires alfred-sass
+    requires geoffrey-less
+    requires geoffrey-coffee
+    requires geoffrey-sass
 }
 
 task democopy {

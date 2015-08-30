@@ -8,7 +8,7 @@ function Get-ScriptDirectory{
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
-. (Join-Path $scriptDir 'import-alfred.ps1')
+. (Join-Path $scriptDir 'import-geoffrey.ps1')
 
 # begin tests
 Describe 'New-AlfredTask tests'{

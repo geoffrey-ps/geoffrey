@@ -8,7 +8,7 @@ function Get-ScriptDirectory{
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
-. (Join-Path $scriptDir 'import-alfred.ps1')
+. (Join-Path $scriptDir 'import-geoffrey.ps1')
 
 Describe 'sample.ps1 tests'{
     It 'can run the sample ps1 file with out errors'{
