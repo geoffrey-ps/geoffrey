@@ -58,7 +58,7 @@ namespace GeoffreyTrx
             
             foreach (string taskName in Geoffrey.DiscoverTasksIn(configPath))
             {
-                string args = @"-NoProfile -NoLogo -NonInteractive -ExecutionPolicy RemoteSigned -Command ""Import-Module '" + Geoffrey.ModulePath + "' 3>$null; Invoke-Alfred -scriptPath '" + configPath + "' -taskName " + taskName + @"""";
+                string args = @"-NoProfile -NoLogo -NonInteractive -ExecutionPolicy RemoteSigned -Command ""Import-Module '" + Geoffrey.ModulePath + "' 3>$null; Invoke-Geoffrey -scriptPath '" + configPath + "' -taskName " + taskName + @"""";
 
                 ITaskRunnerNode task = new TaskRunnerNode(taskName, true)
                 {

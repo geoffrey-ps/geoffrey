@@ -5,21 +5,21 @@ function Get-ScriptDirectory{
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
-function Load-AlfredModule{
+function Load-GeoffreyModule{
     [cmdletbinding()]
     param(
-        [string]$alfredModulePath = (Join-Path $scriptDir '..\geoffrey.psm1')
+        [string]$geoffreyModulePath = (Join-Path $scriptDir '..\geoffrey.psm1')
     )
     process{
         $env:IsDeveloperMachine = $true
-        if(-not (Test-Path $alfredModulePath)){
-            throw ('Unable to find alfred at [{0}]' -f $alfredModulePath)
+        if(-not (Test-Path $geoffreyModulePath)){
+            throw ('Unable to find geoffrey at [{0}]' -f $geoffreyModulePath)
         }
-        if(Get-Module alfred){
-            Remove-Module alfred -force
+        if(Get-Module geoffrey){
+            Remove-Module geoffrey -force
         }
-        Import-Module $alfredModulePath -Force -DisableNameChecking
+        Import-Module $geoffreyModulePath -Force -DisableNameChecking
     }
 }
 
-Load-AlfredModule
+Load-GeoffreyModule

@@ -30,7 +30,7 @@ if(-not (Get-Module geoffrey)){
 }
 
 # todo: figure out a way to avoid this
-Reset-Alfred
+Reset-Geoffrey
 task init{
     if(-not (Test-Path $destfolder)){
         New-Item -Path $destfolder -ItemType Directory -Force
@@ -100,5 +100,5 @@ task demoless{
 
 task default -dependsOn democopy,democoncat,democssmin,demojsmin,demojsmin2,combineandminify,demoless
 
-alfredrun default
+geoffreyrun default
 

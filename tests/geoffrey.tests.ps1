@@ -11,89 +11,89 @@ $scriptDir = ((Get-ScriptDirectory) + "\")
 . (Join-Path $scriptDir 'import-geoffrey.ps1')
 
 # begin tests
-Describe 'New-AlfredTask tests'{
+Describe 'New-GeoffreyTask tests'{
     It 'Can register a new task with a definition'{
         [string]$name = 'namehere'
         [scriptblock]$definition={'some def here'|Write-Verbose}
-        $global:alfredcontext.Tasks.Clear()
-        $global:alfredcontext.Tasks.Count | Should be 0
-        New-AlfredTask -name $name -defintion $definition
-        $global:alfredcontext.Tasks.Count | Should be 1
-        $global:alfredcontext.Tasks[$name].Definition | Should not be null
-        $global:alfredcontext.Tasks[$name].DependsOn | Should be $null
+        $global:geoffreycontext.Tasks.Clear()
+        $global:geoffreycontext.Tasks.Count | Should be 0
+        New-GeoffreyTask -name $name -defintion $definition
+        $global:geoffreycontext.Tasks.Count | Should be 1
+        $global:geoffreycontext.Tasks[$name].Definition | Should not be null
+        $global:geoffreycontext.Tasks[$name].DependsOn | Should be $null
     }
     
     It 'Can register a new task with a dependson with one value'{
         [string]$name = 'namehere'
         [string[]]$dependson='depname'
-        $global:alfredcontext.Tasks.Clear()
-        $global:alfredcontext.Tasks.Count | Should be 0
-        New-AlfredTask -name $name -dependsOn $dependson
-        $global:alfredcontext.Tasks.Count | Should be 1
-        $global:alfredcontext.Tasks[$name].Definition | Should be $null
-        $global:alfredcontext.Tasks[$name].DependsOn.Count | Should be 1
+        $global:geoffreycontext.Tasks.Clear()
+        $global:geoffreycontext.Tasks.Count | Should be 0
+        New-GeoffreyTask -name $name -dependsOn $dependson
+        $global:geoffreycontext.Tasks.Count | Should be 1
+        $global:geoffreycontext.Tasks[$name].Definition | Should be $null
+        $global:geoffreycontext.Tasks[$name].DependsOn.Count | Should be 1
     }
 
     It 'Can register a new task with a dependson with multiple values'{
         [string]$name = 'namehere'
         [string[]]$dependson='depname','otherdepname','thirddep'
-        $global:alfredcontext.Tasks.Clear()
-        $global:alfredcontext.Tasks.Count | Should be 0
-        New-AlfredTask -name $name -dependsOn $dependson
-        $global:alfredcontext.Tasks.Count | Should be 1
-        $global:alfredcontext.Tasks[$name].Definition | Should be $null
-        $global:alfredcontext.Tasks[$name].DependsOn.Count | Should be 3
+        $global:geoffreycontext.Tasks.Clear()
+        $global:geoffreycontext.Tasks.Count | Should be 0
+        New-GeoffreyTask -name $name -dependsOn $dependson
+        $global:geoffreycontext.Tasks.Count | Should be 1
+        $global:geoffreycontext.Tasks[$name].Definition | Should be $null
+        $global:geoffreycontext.Tasks[$name].DependsOn.Count | Should be 3
     }
 
     It 'can register a new task with a definition and dependson with one value'{
         [string]$name = 'namehere'
         [string[]]$dependson='depname'
         [scriptblock]$definition={'some def here'|Write-Verbose}
-        $global:alfredcontext.Tasks.Clear()
-        $global:alfredcontext.Tasks.Count | Should be 0
-        New-AlfredTask -name $name -defintion $definition -dependsOn $dependson
-        $global:alfredcontext.Tasks.Count | Should be 1
-        $global:alfredcontext.Tasks[$name].Definition | Should not be null
-        $global:alfredcontext.Tasks[$name].DependsOn.Count | Should be 1
+        $global:geoffreycontext.Tasks.Clear()
+        $global:geoffreycontext.Tasks.Count | Should be 0
+        New-GeoffreyTask -name $name -defintion $definition -dependsOn $dependson
+        $global:geoffreycontext.Tasks.Count | Should be 1
+        $global:geoffreycontext.Tasks[$name].Definition | Should not be null
+        $global:geoffreycontext.Tasks[$name].DependsOn.Count | Should be 1
     }
 
     It 'can register a new task with a definition and dependson with multiple values'{
         [string]$name = 'namehere'
         [string[]]$dependson='depname','otherdepname','thirddep'
         [scriptblock]$definition={'some def here'|Write-Verbose}
-        $global:alfredcontext.Tasks.Clear()
-        $global:alfredcontext.Tasks.Count | Should be 0
-        New-AlfredTask -name $name -defintion $definition -dependsOn $dependson
-        $global:alfredcontext.Tasks.Count | Should be 1
-        $global:alfredcontext.Tasks[$name].DependsOn.Count | Should be 3
+        $global:geoffreycontext.Tasks.Clear()
+        $global:geoffreycontext.Tasks.Count | Should be 0
+        New-GeoffreyTask -name $name -defintion $definition -dependsOn $dependson
+        $global:geoffreycontext.Tasks.Count | Should be 1
+        $global:geoffreycontext.Tasks[$name].DependsOn.Count | Should be 3
     }
 }
 
-Describe 'Invoke-AlfredTask tests'{
+Describe 'Invoke-GeoffreyTask tests'{
     BeforeEach{
-        $global:alfredcontext.HasBeenInitalized = $false
-        Reset-Alfred
+        $global:geoffreycontext.HasBeenInitalized = $false
+        Reset-Geoffrey
     }
 
     It 'Can invoke a defined task'{
         [string]$name = 'namehere'
         $global:somevarhere=0
         [scriptblock]$definition={$global:somevarhere=5}
-        $global:alfredcontext.Tasks.Clear()
-        $global:alfredcontext.Tasks.Count | Should be 0
-        New-AlfredTask -name $name -defintion $definition
+        $global:geoffreycontext.Tasks.Clear()
+        $global:geoffreycontext.Tasks.Count | Should be 0
+        New-GeoffreyTask -name $name -defintion $definition
         $global:somevarhere | Should be 0
-        Invoke-AlfredTask -name $name
+        Invoke-GeoffreyTask -name $name
         $global:somevarhere | Should be 5
         Remove-Variable -Name somevarhere -Scope global
     }
 
     It 'can invoke a task that has no def and one dependencies'{
         $global:myvar = 0
-        New-AlfredTask -name deptask -defintion {$global:myvar = 5 }
-        New-AlfredTask -name thetask -dependsOn deptask
+        New-GeoffreyTask -name deptask -defintion {$global:myvar = 5 }
+        New-GeoffreyTask -name thetask -dependsOn deptask
         $global:myvar | should be 0
-        Invoke-AlfredTask -name thetask
+        Invoke-GeoffreyTask -name thetask
         $global:myvar | should be 5
         remove-variable -Name myvar -scope global
     }
@@ -101,11 +101,11 @@ Describe 'Invoke-AlfredTask tests'{
     It 'can invoke a task that has a def and one dependency'{
         $global:myvar = 0
         $global:myothervar = 0
-        New-AlfredTask -name deptask -defintion {$global:myvar = 5 }
-        New-AlfredTask -name thetask -defintion {$global:myothervar = 100} -dependsOn deptask
+        New-GeoffreyTask -name deptask -defintion {$global:myvar = 5 }
+        New-GeoffreyTask -name thetask -defintion {$global:myothervar = 100} -dependsOn deptask
         $global:myvar | should be 0
         $global:myothervar | should be 0
-        Invoke-AlfredTask -name thetask
+        Invoke-GeoffreyTask -name thetask
         $global:myvar | should be 5
         $global:myothervar | should be 100
         remove-variable -Name myvar -scope global
@@ -116,14 +116,14 @@ Describe 'Invoke-AlfredTask tests'{
         $global:myvar = 0
         $global:myothervar = 0
         $global:myothervar2 = 0
-        New-AlfredTask -name deptask -defintion {$global:myvar = 5 }
-        New-AlfredTask -name deptask2 -defintion {$global:myothervar2 = 50 }
-        New-AlfredTask -name thetask -defintion {$global:myothervar = 100} -dependsOn deptask,deptask2
+        New-GeoffreyTask -name deptask -defintion {$global:myvar = 5 }
+        New-GeoffreyTask -name deptask2 -defintion {$global:myothervar2 = 50 }
+        New-GeoffreyTask -name thetask -defintion {$global:myothervar = 100} -dependsOn deptask,deptask2
 
         $global:myvar | should be 0
         $global:myothervar | should be 0
         $global:myothervar2 | should be 0
-        Invoke-AlfredTask -name thetask
+        Invoke-GeoffreyTask -name thetask
         $global:myvar | should be 5
         $global:myothervar2 | should be 50
         $global:myothervar | should be 100
@@ -136,14 +136,14 @@ Describe 'Invoke-AlfredTask tests'{
         $global:myvar = 0
         $global:myothervar = 0
         $global:myothervar2 = 0
-        New-AlfredTask -name deptask -defintion {$global:myvar = 5 }
-        New-AlfredTask -name deptask2 -defintion {$global:myothervar2 = 50 } -dependsOn deptask
-        New-AlfredTask -name thetask -defintion {$global:myothervar = 100} -dependsOn deptask2
+        New-GeoffreyTask -name deptask -defintion {$global:myvar = 5 }
+        New-GeoffreyTask -name deptask2 -defintion {$global:myothervar2 = 50 } -dependsOn deptask
+        New-GeoffreyTask -name thetask -defintion {$global:myothervar = 100} -dependsOn deptask2
 
         $global:myvar | should be 0
         $global:myothervar | should be 0
         $global:myothervar2 | should be 0
-        Invoke-AlfredTask -name thetask
+        Invoke-GeoffreyTask -name thetask
         $global:myvar | should be 5
         $global:myothervar2 | should be 50
         $global:myothervar | should be 100
@@ -154,28 +154,28 @@ Describe 'Invoke-AlfredTask tests'{
 
     It 'a task can modify existing variables' {
         $global:counter = 0
-        New-AlfredTask -name mytask -defintion {$global:counter++ }
-        Invoke-AlfredTask mytask,mytask
+        New-GeoffreyTask -name mytask -defintion {$global:counter++ }
+        Invoke-GeoffreyTask mytask,mytask
         $counter | Should be 1
     }
 
     It 'init will only run once' {
-        Mock Invoke-AlfredTask -ParameterFilter {$name -eq 'init'}{}
+        Mock Invoke-GeoffreyTask -ParameterFilter {$name -eq 'init'}{}
 
-        Invoke-AlfredTask init,init
-        Assert-MockCalled Invoke-AlfredTask -Exactly 1 -ParameterFilter {$name -eq 'init'}
+        Invoke-GeoffreyTask init,init
+        Assert-MockCalled Invoke-GeoffreyTask -Exactly 1 -ParameterFilter {$name -eq 'init'}
     }
 }
 
-Describe 'Invoke-AlfredSource tests'{
+Describe 'Invoke-GeoffreySource tests'{
     $script:tempfilecontent1 = 'some content here1'
-    $script:tempfilepath1 = 'Invoke-AlfredSource\temp1.txt'
+    $script:tempfilepath1 = 'Invoke-GeoffreySource\temp1.txt'
 
     $script:tempfilecontent2 = 'some content here2'
-    $script:tempfilepath2 = 'Invoke-AlfredSource\temp2.txt'
+    $script:tempfilepath2 = 'Invoke-GeoffreySource\temp2.txt'
 
     $script:tempfilecontent3 = 'some content here3'
-    $script:tempfilepath3 = 'Invoke-AlfredSource\temp3.txt'
+    $script:tempfilepath3 = 'Invoke-GeoffreySource\temp3.txt'
 
     Setup -File -Path $script:tempfilepath1 -Content $script:tempfilecontent1
     Setup -File -Path $script:tempfilepath2 -Content $script:tempfilecontent2
@@ -183,7 +183,7 @@ Describe 'Invoke-AlfredSource tests'{
 
     It 'given one file returns a stream'{
         $path1 = Join-Path $TestDrive $script:tempfilepath1
-        $result = Invoke-AlfredSource -sourceFiles $path1
+        $result = Invoke-GeoffreySource -sourceFiles $path1
         $result | Should not be $null
         $result.SourceStream | Should not be $null
         $result.SourcePath | Should be $path1
@@ -195,7 +195,7 @@ Describe 'Invoke-AlfredSource tests'{
         $path2 = Join-Path $TestDrive $script:tempfilepath2
         $path3 = Join-Path $TestDrive $script:tempfilepath3
 
-        $result = Invoke-AlfredSource -sourceFiles $path1,$path2,$path3
+        $result = Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3
         $result | Should not be $null
         $result  | % {$_.SourceStream | Should not be $null}
         $result.SourcePath | Should be $path1,$path2,$path3
@@ -203,18 +203,18 @@ Describe 'Invoke-AlfredSource tests'{
     }
 }
 
-Describe 'Invoke-AlfredDest tests'{
+Describe 'Invoke-GeoffreyDest tests'{
     $script:tempfilecontent1 = 'some content here1'
-    $script:tempfilepath1 = 'Invoke-AlfredDest\temp1.txt'
-    $script:tempfilepath11 = 'Invoke-AlfredDest\temp11.txt'
+    $script:tempfilepath1 = 'Invoke-GeoffreyDest\temp1.txt'
+    $script:tempfilepath11 = 'Invoke-GeoffreyDest\temp11.txt'
 
     $script:tempfilecontent2 = 'some content here2'
-    $script:tempfilepath2 = 'Invoke-AlfredDest\temp2.txt'
-    $script:tempfilepath12 = 'Invoke-AlfredDest\temp12.txt'
+    $script:tempfilepath2 = 'Invoke-GeoffreyDest\temp2.txt'
+    $script:tempfilepath12 = 'Invoke-GeoffreyDest\temp12.txt'
 
     $script:tempfilecontent3 = 'some content here3'
-    $script:tempfilepath3 = 'Invoke-AlfredDest\temp3.txt'
-    $script:tempfilepath13 = 'Invoke-AlfredDest\temp13.txt'
+    $script:tempfilepath3 = 'Invoke-GeoffreyDest\temp3.txt'
+    $script:tempfilepath13 = 'Invoke-GeoffreyDest\temp13.txt'
 
     Setup -File -Path $script:tempfilepath1 -Content $script:tempfilecontent1
     Setup -File -Path $script:tempfilepath2 -Content $script:tempfilecontent2
@@ -227,10 +227,10 @@ Describe 'Invoke-AlfredDest tests'{
 
     It 'will copy a single file to the dest'{
         $path1 = Join-Path $TestDrive $script:tempfilepath1
-        $result = Invoke-AlfredSource -sourceFiles $path1
+        $result = Invoke-GeoffreySource -sourceFiles $path1
         $dest = (Join-Path $TestDrive 'dest01.txt')
         $dest | Should not exist
-        Invoke-AlfredDest -sourceStreams $result -destination $dest
+        Invoke-GeoffreyDest -sourceStreams $result -destination $dest
         $dest | Should exist
     }
 
@@ -239,7 +239,7 @@ Describe 'Invoke-AlfredDest tests'{
         $path1 = Join-Path $TestDrive $script:tempfilepath1
         $path2 = Join-Path $TestDrive $script:tempfilepath2
         $path3 = Join-Path $TestDrive $script:tempfilepath3
-        $result = Invoke-AlfredSource -sourceFiles $path1,$path2,$path3
+        $result = Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3
         $dest1 = (Join-Path $TestDrive 'dest01-01.txt')
         $dest2 = (Join-Path $TestDrive 'dest01-02.txt')
         $dest3 = (Join-Path $TestDrive 'dest01-03.txt')
@@ -247,7 +247,7 @@ Describe 'Invoke-AlfredDest tests'{
         $dest1 | Should not exist
         $dest2 | Should not exist
         $dest3 | Should not exist
-        Invoke-AlfredDest -sourceStreams $result -destination $dest1,$dest2,$dest3
+        Invoke-GeoffreyDest -sourceStreams $result -destination $dest1,$dest2,$dest3
         $dest1 | Should exist
         $dest2 | Should exist
         $dest3 | Should exist
@@ -257,16 +257,16 @@ Describe 'Invoke-AlfredDest tests'{
         $path1 = Join-Path $TestDrive $script:tempfilepath11
         $path2 = Join-Path $TestDrive $script:tempfilepath12
         $path3 = Join-Path $TestDrive $script:tempfilepath13
-        $result = Invoke-AlfredSource -sourceFiles $path1,$path2,$path3
+        $result = Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3
         $dest1 = (Join-Path $TestDrive 'dest02-01.txt')
 
         $dest1 | Should not exist
-        Invoke-AlfredDest -sourceStreams $result -destination $dest1
+        Invoke-GeoffreyDest -sourceStreams $result -destination $dest1
         $dest1 | Should exist
     }
 }
 
-Describe 'Invoke-AlfredMinifyCss tests'{
+Describe 'Invoke-GeoffreyMinifyCss tests'{
     $script:samplecss01 = @'
 html {
 	margin: 0;
@@ -360,12 +360,12 @@ body {
 	}
 '@
 
-    It 'Can invoke Invoke-AlfredMinifyCss with a single file'{
+    It 'Can invoke Invoke-GeoffreyMinifyCss with a single file'{
         $samplecss01path = 'minifycss\sample01.css'
         Setup -File -Path $samplecss01path -Content $script:samplecss01
         $samplecss01path = 'minifycss\sample01.css'
         $path1 = Join-Path $TestDrive $samplecss01path
-        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyCss)
+        $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyCss)
         # ensure content is there
         [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
         $minContent = $reader.ReadToEnd()
@@ -382,7 +382,7 @@ body {
         $reader.Dispose()
     }
 
-    It 'Can invoke Invoke-AlfredMinifyCss with multiple files'{
+    It 'Can invoke Invoke-GeoffreyMinifyCss with multiple files'{
         $samplecss01 = 'mincss-multi\01.css'
         $samplecss02 = 'mincss-multi\02.css'
         $samplecss03 = 'mincss-multi\03.css'
@@ -392,7 +392,7 @@ body {
         $path1 = Join-Path $TestDrive $samplecss01
         $path2 = Join-Path $TestDrive $samplecss02
         $path3 = Join-Path $TestDrive $samplecss03
-        $result = (Invoke-AlfredSource -sourceFiles $path1,$path2,$path3 | Invoke-AlfredMinifyCss)
+        $result = (Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3 | Invoke-GeoffreyMinifyCss)
 
         foreach($alfpipeobj in $result){
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
@@ -409,12 +409,12 @@ body {
         }
     }
 
-    It 'Can invoke Invoke-AlfredMinifyCss and pass settingsJson'{
+    It 'Can invoke Invoke-GeoffreyMinifyCss and pass settingsJson'{
         $samplecss04path = 'settingsjson\sample04.css'
         Setup -File -Path $samplecss04path -Content $script:samplecss04
         $path1 = Join-Path $TestDrive $samplecss04path
         # CommentMode=1 is CssComments.None
-        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyCss -settingsJson '{ "CommentMode":  1 }' )
+        $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyCss -settingsJson '{ "CommentMode":  1 }' )
         # ensure content is there
         [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
         $minContent = $reader.ReadToEnd()
@@ -431,12 +431,12 @@ body {
         $reader.Dispose()
     }
 
-    It 'Can invoke Invoke-AlfredMinifyCss and pass params to ajaminx01'{
+    It 'Can invoke Invoke-GeoffreyMinifyCss and pass params to ajaminx01'{
         $samplecss04path = 'settingsjson-02\sample04.css'
         Setup -File -Path $samplecss04path -Content $script:samplecss04
         $path1 = Join-Path $TestDrive $samplecss04path
         # CommentMode=1 is CssComments.None
-        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyCss -CommentMode 'None' -ColorNames NoSwap )
+        $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyCss -CommentMode 'None' -ColorNames NoSwap )
         # ensure content is there
         [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
         $minContent = $reader.ReadToEnd()
@@ -455,7 +455,7 @@ body {
     }
 }
 
-Describe 'Invoke-AlfredMinifyJavaScript tests'{
+Describe 'Invoke-GeoffreyMinifyJavaScript tests'{
     # samples from http://javascriptbook.com/code/
     $script:samplejs01 = @'
 var today = new Date();
@@ -540,11 +540,11 @@ if (hourNow > 18) {
 
 document.write('<h3>' + greeting + '</h3>');
 '@
-    It 'Can invoke Invoke-AlfredMinifyJavaScript with a single file'{
+    It 'Can invoke Invoke-GeoffreyMinifyJavaScript with a single file'{
         $samplejs01path = 'minifyjs\sample01.js'
         Setup -File -Path $samplejs01path -Content $script:samplejs01
         $path1 = Join-Path $TestDrive $samplejs01path
-        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyJavaScript)
+        $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyJavaScript)
         # ensure content is there
         [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
         $minContent = $reader.ReadToEnd()
@@ -561,7 +561,7 @@ document.write('<h3>' + greeting + '</h3>');
         $reader.Dispose()
     }
 
-    It 'Can invoke Invoke-AlfredMinifyJavaScript with multiple files'{
+    It 'Can invoke Invoke-GeoffreyMinifyJavaScript with multiple files'{
         $samplejs01 = 'minjs-multi\01.js'
         $samplejs02 = 'minjs-multi\02.js'
         $samplejs03 = 'minjs-multi\03.js'
@@ -571,7 +571,7 @@ document.write('<h3>' + greeting + '</h3>');
         $path1 = Join-Path $TestDrive $samplejs01
         $path2 = Join-Path $TestDrive $samplejs02
         $path3 = Join-Path $TestDrive $samplejs03
-        $result = (Invoke-AlfredSource -sourceFiles $path1,$path2,$path3 | Invoke-AlfredMinifyJavaScript)
+        $result = (Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3 | Invoke-GeoffreyMinifyJavaScript)
 
         foreach($alfpipeobj in $result){
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
@@ -592,7 +592,7 @@ document.write('<h3>' + greeting + '</h3>');
         $samplejs01path = 'minifyjs\settings01.js'
         Setup -File -Path $samplejs01path -Content $script:samplejs04
         $path1 = Join-Path $TestDrive $samplejs01path
-        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyJavaScript -settingsJson '{ "PreserveImportantComments":false}')
+        $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyJavaScript -settingsJson '{ "PreserveImportantComments":false}')
         # ensure content is there
         [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
         $minContent = $reader.ReadToEnd()
@@ -613,7 +613,7 @@ document.write('<h3>' + greeting + '</h3>');
         $samplejs01path = 'minifyjs\settings02.js'
         Setup -File -Path $samplejs01path -Content $script:samplejs04
         $path1 = Join-Path $TestDrive $samplejs01path
-        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredMinifyJavaScript -PreserveImportantComments $false )
+        $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyJavaScript -PreserveImportantComments $false )
         # ensure content is there
         [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
         $minContent = $reader.ReadToEnd()
@@ -629,7 +629,7 @@ document.write('<h3>' + greeting + '</h3>');
         $reader.Dispose()
     }
 }
-Describe 'Invoke-AlfredLess tests'{
+Describe 'Invoke-GeoffreyLess tests'{
     # from http://lesscss.org/
     $script:sampleless01 = @'
 @base: #f938ab;
@@ -705,12 +705,12 @@ p {
 }
 '@
 
-    It 'Can invoke Invoke-AlfredLess with a single file'{
+    It 'Can invoke Invoke-GeoffreyLess with a single file'{
         $sampleless01path = 'less\less01.less'
         Setup -File -Path $sampleless01path -Content $script:sampleless01
 
         $path1 = Join-Path $TestDrive $sampleless01path
-        $result = (Invoke-AlfredSource -sourceFiles $path1 | Invoke-AlfredLess)
+        $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyLess)
         # ensure content is there
         [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
         $compiledContent = $reader.ReadToEnd()
@@ -727,7 +727,7 @@ p {
         $reader.Dispose()
     }
 
-    It 'Can invoke Invoke-AlfredLess with multiple files'{
+    It 'Can invoke Invoke-GeoffreyLess with multiple files'{
         $sampleless01path = 'less\less01.less'
         $sampleless02path = 'less\less01.less'
         $sampleless03path = 'less\less01.less'
@@ -738,7 +738,7 @@ p {
         $path1 = Join-Path $TestDrive $sampleless01path
         $path2 = Join-Path $TestDrive $sampleless01path
         $path3 = Join-Path $TestDrive $sampleless01path
-        $result = (Invoke-AlfredSource -sourceFiles $path1,$path2,$path3 | Invoke-AlfredLess)
+        $result = (Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3 | Invoke-GeoffreyLess)
         foreach($alfpipeobj in $result){
             # ensure content is there
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
@@ -759,7 +759,7 @@ p {
 
 }
 
-Describe 'Invoke-Alfred tests'{
+Describe 'Invoke-Geoffrey tests'{
     $sampleScript01 = @'
     task default {
         $global:defaultwasrun = $true
@@ -787,7 +787,7 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'Can run a file with just a default task in g.ps1'{
-        $sampleScript01path = 'invoke-alfred\01\g.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\01\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript01
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -795,7 +795,7 @@ Describe 'Invoke-Alfred tests'{
         try{
             Set-Location ($path1.Directory.FullName)
             $global:defaultwasrun | Should be $false
-            Invoke-Alfred
+            Invoke-Geoffrey
             $global:defaultwasrun | Should be $true
         }
         finally{
@@ -804,7 +804,7 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'Can run a file with just a default task and pass in the name of the file'{
-        $sampleScript01path = 'invoke-alfred\02\sample.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\02\sample.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript01
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -812,7 +812,7 @@ Describe 'Invoke-Alfred tests'{
         try{
             Set-Location ($path1.Directory.FullName)
             $global:defaultwasrun | Should be $false
-            Invoke-Alfred -scriptPath $path1.FullName
+            Invoke-Geoffrey -scriptPath $path1.FullName
             $global:defaultwasrun | Should be $true
         }
         finally{
@@ -821,14 +821,14 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'Can run a file with default that depends on other tasks'{
-        $sampleScript01path = 'invoke-alfred\03\g.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\03\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
         Push-Location
         try{
             Set-Location ($path1.Directory.FullName)
-            Invoke-Alfred
+            Invoke-Geoffrey
             $global:mydepwasrun | Should be $true
             $global:mydep2wasrun | Should be $true
             $global:mydep3wasrun | Should be $true
@@ -839,11 +839,11 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'Can run a file with default that depends on other tasks and pass in the script path'{
-        $sampleScript01path = 'invoke-alfred\04\g.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\04\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
-        Invoke-Alfred -scriptPath $path1.FullName
+        Invoke-Geoffrey -scriptPath $path1.FullName
         $global:mydepwasrun | Should be $true
         $global:mydep2wasrun | Should be $true
         $global:mydep3wasrun | Should be $true
@@ -851,11 +851,11 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'can use -list to get task names'{
-        $sampleScript01path = 'invoke-alfred\05\g.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\05\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
-        $taskNames = Invoke-Alfred -scriptPath $path1.FullName -list
+        $taskNames = Invoke-Geoffrey -scriptPath $path1.FullName -list
         $taskNames.Count | Should Be 4
         $taskNames.Contains('default') | should be $true
         $taskNames.Contains('mydep') | should be $true
@@ -864,11 +864,11 @@ Describe 'Invoke-Alfred tests'{
     }
 
     It 'can execute a specific task by name'{
-        $sampleScript01path = 'invoke-alfred\06\g.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\06\g.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
-        Invoke-Alfred -scriptPath $path1 -taskName mydep
+        Invoke-Geoffrey -scriptPath $path1 -taskName mydep
     }
 }
 
@@ -919,26 +919,3 @@ Describe 'InternalOverrideSettingsFromEnv tests'{
         Remove-Item -Path $othersettingpath
     }
 }
-
-
-<#
-function InternalOverrideSettingsFromEnv{
-    [cmdletbinding()]
-    param(
-        [Parameter(Position=0)]
-        $settingsObj = $global:alfredsettings
-    )
-    process{
-        if($settingsObj -eq $null){
-            return
-        }
-
-        $settingNames = ($settingsObj | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name)
-        foreach($name in $settingNames){
-            if(Test-Path "env:$name"){
-                $settingsObj.$name = (get-childitem "env:$name").Value
-            }
-        }
-    }
-}
-#>

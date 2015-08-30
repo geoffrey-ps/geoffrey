@@ -8,16 +8,16 @@ function Get-ScriptDirectory{
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
 
-$global:alfredsettings = new-object psobject -Property @{
+$global:geoffreysettings = new-object psobject -Property @{
     NuGetPowerShellMinModuleVersion = '0.2.3.1'
     PrintTaskExecutionTimes = $true
-    AlfredPrintTasknameColor = 'Yellow'
-    AlfredPrintTaskTimeColor = 'Green'
+    GeoffreyPrintTasknameColor = 'Yellow'
+    GeoffreyPrintTaskTimeColor = 'Green'
 }
-if(Test-Path env:alfredprinttasktimes){
-    $global:alfredsettings.PrintTaskExecutionTimes =($env:alfredprinttasktimes)
+if(Test-Path env:geoffreyprinttasktimes){
+    $global:geoffreysettings.PrintTaskExecutionTimes =($env:geoffreyprinttasktimes)
 }
-$global:alfredcontext = New-Object PSObject -Property @{
+$global:geoffreycontext = New-Object PSObject -Property @{
     HasBeenInitalized = $false
     Tasks = [hashtable]@{}
     RunTasks = $true
@@ -29,7 +29,7 @@ function InternalOverrideSettingsFromEnv{
     [cmdletbinding()]
     param(
         [Parameter(Position=0)]
-        $settingsObj = $global:alfredsettings,
+        $settingsObj = $global:geoffreysettings,
 
         [Parameter(Position=1)]
         [string]$prefix
@@ -50,17 +50,17 @@ function InternalOverrideSettingsFromEnv{
 }
 
 # later we will use this to check if it has been initalized and throw an error if not
-function Reset-Alfred{
+function Reset-Geoffrey{
     [cmdletbinding()]
     param()
     process{
         InternalOverrideSettingsFromEnv
 
-        $global:alfredcontext.Tasks = [hashtable]@{}
-        $global:alfredcontext.RunTasks = $true
-        $global:alfredcontext.HasBeenInitalized = $true
-        $global:alfredcontext.TasksExecuted.Clear()
-        $global:alfredcontext.HasRunInitTask = $false
+        $global:geoffreycontext.Tasks = [hashtable]@{}
+        $global:geoffreycontext.RunTasks = $true
+        $global:geoffreycontext.HasBeenInitalized = $true
+        $global:geoffreycontext.TasksExecuted.Clear()
+        $global:geoffreycontext.HasRunInitTask = $false
         Ensure-NuGetPowerShellIsLoaded
     }
 }
@@ -68,7 +68,7 @@ function Reset-Alfred{
 function Ensure-NuGetPowerShellIsLoaded{
     [cmdletbinding()]
     param(
-        $nugetPsMinModVersion = $global:alfredsettings.NuGetPowerShellMinModuleVersion
+        $nugetPsMinModVersion = $global:geoffreysettings.NuGetPowerShellMinModuleVersion
     )
     process{
         # see if nuget-powershell is available and load if not
@@ -92,23 +92,23 @@ function Ensure-NuGetPowerShellIsLoaded{
     }
 }
 
-function Invoke-AlfredRequires{
+function Invoke-GeoffreyRequires{
     [cmdletbinding()]
     param(
         [string[]]$moduleName
     )
     process{
-        if($global:alfredcontext.RunTasks){
+        if($global:geoffreycontext.RunTasks){
             foreach($itemName in $moduleName){
                 'Downloading and importing {0}' -f $itemName | Write-Host
             }
         }
         else{
-            'Skipping requires because alfredruntasks is false' | Write-Verbose
+            'Skipping requires because ''geoffreycontext.RunTasks'' is false' | Write-Verbose
         }
     }
 }
-Set-Alias requires Invoke-AlfredRequires
+Set-Alias requires Invoke-GeoffreyRequires
 
 <#
 .SYNOPSIS
@@ -124,7 +124,7 @@ Set-Alias requires Invoke-AlfredRequires
     Name(s) of the task(s) that should be executed. This will accept either a single
     value or multiple values.
 #>
-function Invoke-Alfred{
+function Invoke-Geoffrey{
     [cmdletbinding()]
     param(
         [Parameter(Position=0)]
@@ -137,52 +137,52 @@ function Invoke-Alfred{
         [string[]]$taskName
     )
     begin{
-        Reset-Alfred
+        Reset-Geoffrey
     }
     process{
         $taskNamePassed = ($PSBoundParameters.ContainsKey('taskName'))
         $runtasks = !($list -or $taskName)
 
         try{
-            $global:alfredcontext.RunTasks =$runtasks
+            $global:geoffreycontext.RunTasks =$runtasks
             # execute the script
             . $scriptPath
 
             if($list){
                 # output the name of all the registered tasks
-                $global:alfredcontext.Tasks.Keys
+                $global:geoffreycontext.Tasks.Keys
             }
             elseif($taskNamePassed){ # if -list is passed don't execute anything
-                $runtaskpreviousvalue = $global:alfredcontext.RunTasks
+                $runtaskpreviousvalue = $global:geoffreycontext.RunTasks
                 try{
-                    $global:alfredcontext.RunTasks = $true
-                    Invoke-AlfredTask $taskName
+                    $global:geoffreycontext.RunTasks = $true
+                    Invoke-GeoffreyTask $taskName
                 }
                 finally{
-                    $global:alfredcontext.RunTasks = $runtaskpreviousvalue
+                    $global:geoffreycontext.RunTasks = $runtaskpreviousvalue
                 }
             }
             else{
                 # execute the default task if it exists
-                $defaultTask = $global:alfredcontext.Tasks.Item('default')
+                $defaultTask = $global:geoffreycontext.Tasks.Item('default')
                 if( $defaultTask -ne $null ){
-                    Invoke-AlfredTask -name default
+                    Invoke-GeoffreyTask -name default
                 }
             }
         }
         finally{
-            $global:alfredcontext.RunTasks = $true
+            $global:geoffreycontext.RunTasks = $true
         }
     }
 }
-Set-Alias alfred Invoke-Alfred
+Set-Alias geoffrey Invoke-Geoffrey
 
 <#
 .SYNOPSIS
-This will create a new task, register it with alfred and return the object itself. If there is already
+This will create a new task, register it with geoffrey and return the object itself. If there is already
 a task with the given name it will be overwritten
 #>
-function New-AlfredTask{
+function New-GeoffreyTask{
     [cmdletbinding()]
     param(
         [Parameter(Mandatory=$true,Position=0)]
@@ -196,8 +196,8 @@ function New-AlfredTask{
         [string[]]$dependsOn
     )
     begin{
-        if($global:alfredcontext.HasBeenInitalized -ne $true){
-            Reset-Alfred
+        if($global:geoffreycontext.HasBeenInitalized -ne $true){
+            Reset-Geoffrey
         }
     }
     process{
@@ -206,12 +206,12 @@ function New-AlfredTask{
             Definition = $defintion
             DependsOn = $dependsOn
         }
-        $global:alfredcontext.Tasks[$name]=$result
+        $global:geoffreycontext.Tasks[$name]=$result
     }
 }
-set-alias task New-AlfredTask
+set-alias task New-GeoffreyTask
 
-function Invoke-AlfredTask{
+function Invoke-GeoffreyTask{
     [cmdletbinding()]
     param(
         [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
@@ -219,15 +219,15 @@ function Invoke-AlfredTask{
         [string[]]$name
     )
     process{
-        if($global:alfredcontext.RunTasks -eq $true){
+        if($global:geoffreycontext.RunTasks -eq $true){
             # run the init task if not already
-            if($global:alfredcontext.HasRunInitTask -ne $true){
+            if($global:geoffreycontext.HasRunInitTask -ne $true){
                 # set this before calling the task to ensure the if only passes once
-                $global:alfredcontext.HasRunInitTask = $true
+                $global:geoffreycontext.HasRunInitTask = $true
 
-                $initTask = $global:alfredcontext.Tasks.Item('init')
+                $initTask = $global:geoffreycontext.Tasks.Item('init')
                 if( $initTask -ne $null -and ([string]::Compare($name,'init') -ne 0) ){
-                    Invoke-AlfredTask -name init
+                    Invoke-GeoffreyTask -name init
                 }
             }
 
@@ -235,14 +235,14 @@ function Invoke-AlfredTask{
                 [System.Diagnostics.Stopwatch]$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
                 # skip executing the task if already executed
-                if($global:alfredcontext.TasksExecuted.Contains($taskname)){
+                if($global:geoffreycontext.TasksExecuted.Contains($taskname)){
                     'Skipping task [{0}] because it has already been executed' -f $taskname | Write-Verbose
                     continue;
                 }
 
-                $global:alfredcontext.TasksExecuted.Add($taskname)
+                $global:geoffreycontext.TasksExecuted.Add($taskname)
 
-                $tasktorun = $global:alfredcontext.Tasks[$taskname]
+                $tasktorun = $global:geoffreycontext.Tasks[$taskname]
 
                 if($tasktorun -eq $null){
                     throw ('Did not find a task with the name [{0}]' -f $taskname)
@@ -252,14 +252,14 @@ function Invoke-AlfredTask{
                     foreach($dtask in ($tasktorun.DependsOn)){
                         # avoid infinite loop
                         if([string]::Compare($taskname,$dtask) -ne 0){
-                            Invoke-AlfredTask $dtask
+                            Invoke-GeoffreyTask $dtask
                         }
                     }
                 }
 
                 if($tasktorun.Definition -ne $null){
                     'Invoking task [{0}]' -f $taskname | Write-Verbose
-                    & (($global:alfredcontext.Tasks[$taskname]).Definition)
+                    & (($global:geoffreycontext.Tasks[$taskname]).Definition)
                 }
 
                 $stopwatch.Stop()
@@ -268,7 +268,7 @@ function Invoke-AlfredTask{
         }
     }
 }
-Set-Alias alfredrun Invoke-AlfredTask
+Set-Alias geoffreyrun Invoke-GeoffreyTask
 
 function Print-TaskExecutionInfo{
     [cmdletbinding()]
@@ -279,13 +279,13 @@ function Print-TaskExecutionInfo{
         $milliseconds
     )
     process{
-        if($global:alfredsettings.PrintTaskExecutionTimes -eq $true){
+        if($global:geoffreysettings.PrintTaskExecutionTimes -eq $true){
             $usewriteobj = $true
 
             if(get-command Write-Host -ErrorAction SilentlyContinue){
                 try{
-                    '{0}:' -f $taskname | Write-Host -NoNewline -ForegroundColor $global:alfredsettings.AlfredPrintTasknameColor -ErrorAction SilentlyContinue
-                    ' {0}' -f $milliseconds | Write-Host -ForegroundColor $global:alfredsettings.AlfredPrintTaskTimeColor -NoNewline -ErrorAction SilentlyContinue
+                    '{0}:' -f $taskname | Write-Host -NoNewline -ForegroundColor $global:geoffreysettings.GeoffreyPrintTasknameColor -ErrorAction SilentlyContinue
+                    ' {0}' -f $milliseconds | Write-Host -ForegroundColor $global:geoffreysettings.GeoffreyPrintTaskTimeColor -NoNewline -ErrorAction SilentlyContinue
                     ' milliseconds' | Write-Host -ErrorAction SilentlyContinue
 
                     # if it gets here there was no error calling Write-Host
@@ -303,7 +303,7 @@ function Print-TaskExecutionInfo{
     }
 }
 
-function InternalGet-AlfredSourcePipelineObj{
+function InternalGet-GeoffreySourcePipelineObj{
     [cmdletbinding()]
     param(
         [System.IO.Stream[]]$sourceStream,
@@ -327,7 +327,7 @@ function InternalGet-AlfredSourcePipelineObj{
                     SourceStream = $source
                     SourcePath = ($sourcePath[$currentIndex])
                 }
-                $sourceObj.PSObject.TypeNames.Insert(0,'AlfredSourcePipeObj')
+                $sourceObj.PSObject.TypeNames.Insert(0,'GeoffreySourcePipeObj')
                 $currentIndex++ | Out-Null
 
                 # return the obj to the pipeline
@@ -341,7 +341,7 @@ function InternalGet-AlfredSourcePipelineObj{
 .SYNOPSIS
 This will read the given files and return streams. It's up to the caller to close the streams
 #>
-function Invoke-AlfredSource{
+function Invoke-GeoffreySource{
     [cmdletbinding()]
     param(
         [Parameter(Position=0,ValueFromPipeline=$true)]
@@ -355,21 +355,21 @@ function Invoke-AlfredSource{
             }
 
             # read the file and return the stream to the pipeline
-            InternalGet-AlfredSourcePipelineObj -sourceStream ([System.IO.File]::OpenRead($filepath)) -sourcePath $file
+            InternalGet-GeoffreySourcePipelineObj -sourceStream ([System.IO.File]::OpenRead($filepath)) -sourcePath $file
         }
     }
 }
-set-alias src Invoke-AlfredSource
+set-alias src Invoke-GeoffreySource
 
 <#
 If dest is a single file then place all streams into the same file
 If dest has more than one value then it should be 1:1 with the streams
 #>
-function Invoke-AlfredDest{
+function Invoke-GeoffreyDest{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [object[]]$sourceStreams, # type is AlfredSourcePipeObj
+        [object[]]$sourceStreams, # type is GeoffreySourcePipeObj
 
         [Parameter(Position=0)]
         [string[]]$destination
@@ -439,7 +439,7 @@ function Invoke-AlfredDest{
         }
     }
 }
-Set-Alias dest Invoke-AlfredDest
+Set-Alias dest Invoke-GeoffreyDest
 
 [string]$script:ajaxminpath = $null
 <#
@@ -492,13 +492,13 @@ Set-Alias dest Invoke-AlfredDest
 .EXAMPLE
     dir "$sourcefolder\css\site.css" | src | cssmin -settingsJson '{ "CommentMode":  1 }'  | dest "$destfolder\site.min.css"
 #>
-function Invoke-AlfredMinifyCss{
+function Invoke-GeoffreyMinifyCss{
 # this will take in a set of streams, minify the css and then return new streams
 # this uses ajaxmin see https://ajaxmin.codeplex.com/wikipage?title=AjaxMin%20DLL
     [cmdletbinding()]
     param(
         [Parameter(Position=0,ValueFromPipeline=$true)]
-        [object[]]$sourceStreams,  # type is AlfredSourcePipeObj
+        [object[]]$sourceStreams,  # type is GeoffreySourcePipeObj
 
         [Parameter(Position=1)]
         [string]$settingsJson,
@@ -567,12 +567,12 @@ function Invoke-AlfredMinifyCss{
             $stringwriter.Flush() | Out-Null
             $memStream.Position = 0
             # return the stream to the pipeline
-            InternalGet-AlfredSourcePipelineObj -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
+            InternalGet-GeoffreySourcePipelineObj -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
         }
     }
 }
-Set-Alias minifycss Invoke-AlfredMinifyCss -Description 'This alias is deprecated use cssmin instead'
-Set-Alias cssmin Invoke-AlfredMinifyCss
+Set-Alias minifycss Invoke-GeoffreyMinifyCss -Description 'This alias is deprecated use cssmin instead'
+Set-Alias cssmin Invoke-GeoffreyMinifyCss
 
 <#
 .SYNOPSIS
@@ -640,13 +640,13 @@ Set-Alias cssmin Invoke-AlfredMinifyCss
 .EXAMPLE
     dir "$sourcefolder\js\jquery-1.10.2.js" | src | jsmin -settingsJson '{ "PreserveImportantComments":false}' -AlwaysEscapeNonAscii $true | dest "$destfolder\jquery-1.10.2.min.js"
 #>
-function Invoke-AlfredMinifyJavaScript{
+function Invoke-GeoffreyMinifyJavaScript{
     [cmdletbinding()]
     param(
         # note: parameters that have the same name as CodeSettings properties
         #       will get passed to CodeSettings
         [Parameter(ValueFromPipeline=$true,Position=0)]
-        [object[]]$sourceStreams,  # type is AlfredSourcePipeObj
+        [object[]]$sourceStreams,  # type is GeoffreySourcePipeObj
 
         [Parameter(Position=1)]
         [string]$settingsJson,
@@ -723,19 +723,19 @@ function Invoke-AlfredMinifyJavaScript{
             $memStream.Position = 0
 
             # return the stream to the pipeline
-            InternalGet-AlfredSourcePipelineObj -sourceStream $memStream -sourcePath ($jsstreampipeobj.SourcePath)
+            InternalGet-GeoffreySourcePipelineObj -sourceStream $memStream -sourcePath ($jsstreampipeobj.SourcePath)
         }
     }
 }
-Set-Alias minifyjs Invoke-AlfredMinifyJavaScript -Description 'This alias is deprecated use jsmin instead'
-Set-Alias jsmin Invoke-AlfredMinifyJavaScript
+Set-Alias minifyjs Invoke-GeoffreyMinifyJavaScript -Description 'This alias is deprecated use jsmin instead'
+Set-Alias jsmin Invoke-GeoffreyMinifyJavaScript
 
 $script:lessassemblypath = $null
-function Invoke-AlfredLess{
+function Invoke-GeoffreyLess{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [object[]]$sourceStreams  # type is AlfredSourcePipeObj        
+        [object[]]$sourceStreams  # type is GeoffreySourcePipeObj        
     )
     begin{
         if([string]::IsNullOrEmpty($script:lessassemblypath)){
@@ -764,11 +764,11 @@ function Invoke-AlfredLess{
             $memStream.Position = 0
 
             # return the stream to the pipeline
-            InternalGet-AlfredSourcePipelineObj -sourceStream $memStream -sourcePath ($lessstreampipeobj.SourcePath)
+            InternalGet-GeoffreySourcePipelineObj -sourceStream $memStream -sourcePath ($lessstreampipeobj.SourcePath)
         }
     }
 }
-Set-Alias less Invoke-AlfredLess
+Set-Alias less Invoke-GeoffreyLess
 
 # todo we should update this to export on the correct items and use
 # $env:IsDeveloperMachine to expose to tests cases
