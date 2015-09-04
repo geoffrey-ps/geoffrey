@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  For more info on this file format visit http://docs.nuget.org/docs/reference/nuspec-reference.
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">  
+  <metadata>
+    <id>geoffrey</id>
+    <version>0.0.1-beta</version>
+    <authors>Sayed Ibrahim Hashimi</authors>
+    <description>
+      Package containing Geoffrey, a PowerShell task runner for web apps.
+      
+      For more info see https://github.com/geoffrey-ps/geoffrey.
+
+      Commit ID: $(COMMIT_ID)
+    </description>    
+    <language>en-US</language>
+    <projectUrl>https://github.com/geoffrey-ps/geoffrey/</projectUrl>
+    <licenseUrl>https://github.com/geoffrey-ps/geoffrey/blob/master/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <copyright>Copyright 2015 Sayed Ibrahim Hashimi</copyright>
+    <tags>msbuild</tags>
+    <!-- This is hack to avoid having content in the package -->
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System"  />
+    </frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="README.md" />
+    <file src="geoffrey.psm1" target="tools" />
+    <file src="Minimatch.dll" target="tools" />
+    <file src="Geoffry.Watch.dll" target="tools" />
+</files>
+</package>

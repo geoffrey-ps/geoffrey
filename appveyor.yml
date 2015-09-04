@@ -1,4 +1,4 @@
-os: Visual Studio 2015 RC
+os: Visual Studio 2015 RTM
 
 environment:
   NuGetApiKey:
@@ -13,4 +13,7 @@ build_script:
   - ps: .\appveyor.ps1
 
 artifacts:
-  - path: 'src\GeoffreyTrx\bin\Release\*'
+  - path: 'OutputRoot\_nuget-pkg\*.nupkg'
+  - path: 'OutputRoot\GeoffreyTrx.vsix'
+  - path: 'OutputRoot\geoffrey.nuspec'
+  - path: 'OutputRoot\geoffrey.psm1'

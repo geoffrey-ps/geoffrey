@@ -1,7 +1,10 @@
 ﻿$env:ExitOnPesterFail = $true
 $env:IsDeveloperMachine=$true
+$env:PesterEnableCodeCoverage = $true
 
-# disabling coverage for now, its not working on appveyor for some reason
-#$env:PesterEnableCodeCoverage = $true
-
-.\build.ps1
+if($env:APPVEYOR_REPO_BRANCH -eq "release"){
+    .\build.ps1 -publishToNuget
+}
+else {
+    .\build.ps1
+}
