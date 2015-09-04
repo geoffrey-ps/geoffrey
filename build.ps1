@@ -4,7 +4,14 @@ param(
     [switch]$build,
 
     [Parameter(ParameterSetName='build',Position=1)]
+    [string]$configuration = 'Release',
+
+    [Parameter(ParameterSetName='build',Position=2)]
+    [System.IO.DirectoryInfo]$outputPath,
+
+    [Parameter(ParameterSetName='build',Position=3)]
     [switch]$cleanBeforeBuild,
+
 
     [Parameter(ParameterSetName='clean',Position=0)]
     [switch]$clean
@@ -16,6 +23,10 @@ function Get-ScriptDirectory{
     split-path (((Get-Variable MyInvocation -Scope 1).Value).MyCommand.Path)
 }
 $scriptDir = ((Get-ScriptDirectory) + "\")
+
+if([string]::IsNullOrWhiteSpace($outputPath)){
+    $outputPath = (Join-Path $scriptDir 'OutputRoot')
+}
 
 <#
 .SYNOPSIS
@@ -49,18 +60,31 @@ function Initalize{
     }
 }
 
+[hashtable]$buildProperties = @{
+    'Configuration'=$configuration
+    'DeployExtension'='false'
+    'OutputPath'=$outputPath.FullName
+    'VisualStudioVersion'='14.0'
+}
+
 function Build-Projects{
     [cmdletbinding()]
     param()
     process {
+        if($outputPath -eq $null){throw 'outputpath is null'}
+
         $projectToBuild = Join-Path $scriptDir 'src\Geoffrey.sln'
 
         if(-not (Test-Path $projectToBuild)){
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
         }
 
-        Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0 -configuration Release -properties @{'DeployExtension'='false'}
+        if(-not (Test-Path $OutputPath)){
+            'Creating output folder [{0}]' -f $outputPath | Write-Output
+            New-Item -Path $outputPath -ItemType Directory
+        }
 
+        Invoke-MSBuild $projectToBuild -properties $buildProperties
     }
 }
 
@@ -74,9 +98,10 @@ function Clean{
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
         }
 
-        Invoke-MSBuild $projectToBuild -visualStudioVersion 14.0 -targets Clean -properties @{'DeployExtension'='false'}
+        Invoke-MSBuild $projectToBuild -targets Clean -properties $buildProperties
 
         [System.IO.DirectoryInfo[]]$foldersToDelete = (Get-ChildItem $scriptDir -Include bin,obj -Recurse -Directory)
+        $foldersToDelete += $outputPath
 
         foreach($folder in $foldersToDelete){
             if(Test-Path $folder){
