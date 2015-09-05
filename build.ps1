@@ -18,8 +18,20 @@ param(
     [Parameter(ParameterSetName='build',Position=5)]
     [string]$nugetApiKey = ($env:NuGetApiKey),
 
+    # version parameters
+    [Parameter(ParameterSetName='setversion',Position=0)]
+    [switch]$setversion,
+
+    [Parameter(ParameterSetName='getversion',Position=0)]
+    [switch]$getversion,
+
+    # clean parameters
     [Parameter(ParameterSetName='clean',Position=0)]
-    [switch]$clean
+    [switch]$clean,
+
+    [Parameter(ParameterSetName='openciwebsite',Position=0)]
+    [Alias('openci')]
+    [switch]$openciwebsite
 )
 
 Set-StrictMode -Version Latest
@@ -45,9 +57,6 @@ function EnsurePsbuildInstlled{
             'Installing psbuild from [{0}]' -f $psbuildInstallUri | Write-Verbose
             (new-object Net.WebClient).DownloadString($psbuildInstallUri) | iex
         }
-        else{
-            'psbuild already loaded, skipping download' | Write-Verbose
-        }
 
         # make sure it's loaded and throw if not
         if(-not (Get-Command "Invoke-MsBuild" -errorAction SilentlyContinue)){
@@ -66,13 +75,28 @@ function EnsureNuGetPowerShellInstlled{
             'Installing nuget-powershell from [{0}]' -f $installUri | Write-Verbose
             (new-object Net.WebClient).DownloadString($installUri) | iex
         }
-        else{
-            'nuget-powershell already loaded, skipping download' | Write-Verbose
-        }
 
         # make sure it's loaded and throw if not
         if(-not (Get-Command -Name Get-NuGetPackage -Module nuget-powershell -errorAction SilentlyContinue)){
             throw ('Unable to install/load nuget-powershell from [{0}]' -f $installUri)
+        }
+    }
+}
+
+function EnsureFileReplacerInstlled{
+    [cmdletbinding()]
+    param(
+        [string]$installUri = 'https://raw.githubusercontent.com/ligershark/nuget-powershell/master/get-nugetps.ps1'
+    )
+    process{
+        if(-not (Get-Command -Module file-replacer -Name Replace-TextInFolder -errorAction SilentlyContinue)){
+            $fpinstallpath = (Get-NuGetPackage -name file-replacer -version '0.4.0-beta' -binpath)
+            Import-Module (Join-Path $fpinstallpath 'file-replacer.psm1')
+        }
+
+        # make sure it's loaded and throw if not
+        if(-not (Get-Command -Module file-replacer -Name Replace-TextInFolder -errorAction SilentlyContinue)){
+            throw ('Unable to install/load file-replacer')
         }
     }
 }
@@ -212,28 +236,98 @@ function Run-Tests{
     }
 }
 
+<#
+.SYNOPSIS 
+This will inspect the publsish nuspec file and return the value for the Version element.
+#>
+function GetExistingVersion{
+    [cmdletbinding()]
+    param(
+        [ValidateScript({test-path $_ -PathType Leaf})]
+        $nuspecFile = (Join-Path $scriptDir 'geoffrey.nuspec')
+    )
+    process{
+        ([xml](Get-Content $nuspecFile)).package.metadata.version
+    }
+}
+
+function SetVersion{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$newversion,
+
+        [Parameter(Position=1)]
+        [ValidateNotNullOrEmpty()]
+        [string]$oldversion = (GetExistingVersion),
+
+        [Parameter(Position=2)]
+        [string]$filereplacerVersion = '0.4.0-beta'
+    )
+    begin{
+        EnsureFileReplacerInstlled
+    }
+    process{
+        $folder = $scriptDir
+        $include = '*.nuspec;*.ps*1'
+        # In case the script is in the same folder as the files you are replacing add it to the exclude list
+        $exclude = "$($MyInvocation.MyCommand.Name);"
+        $replacements = @{
+            "$oldversion"="$newversion"
+        }
+        Replace-TextInFolder -folder $folder -include $include -exclude $exclude -replacements $replacements | Write-Verbose
+
+        # update the .psd1 file if there is one
+        $replacements = @{
+            ($oldversion.Replace('-beta','.1'))=($newversion.Replace('-beta','.1'))
+        }
+        Replace-TextInFolder -folder $folder -include '*.psd1' -exclude $exclude -replacements $replacements | Write-Verbose
+        'Replacement complete' | Write-Verbose
+    }
+}
+
+function OpenCiWebsite{
+    [cmdletbinding()]
+    param()
+    process{
+        start 'https://ci.appveyor.com/project/sayedihashimi/geoffrey'
+    }
+}
+
+function Build-All{
+    [cmdletbinding()]
+    param()
+    process{
+        Build-Projects
+        Run-Tests
+        Build-NuGetPackage
+
+        # publish to nuget if selected
+        if($publishToNuget){
+            (Get-ChildItem -Path ($outputPathNuget) 'geoffrey*.nupkg').FullName | PublishNuGetPackage -nugetApiKey $nugetApiKey
+        }
+    }
+}
+
 # being script
 Initalize
 
-if(-not $clean -and (-not $build)){
+if(!$build -and !$setversion -and !$getversion -and !$openciwebsite){
     $build = $true
 }
 
-if($publishToNuget){
-    $clean = $true
-}
-
-if($clean){
-    Clean
-}
-
-if($build){
-    Build-Projects
-    Run-Tests
-    Build-NuGetPackage
-
-    # publish to nuget if selected
-    if($publishToNuget){
-        (Get-ChildItem -Path ($outputPathNuget) 'geoffrey*.nupkg').FullName | PublishNuGetPackage -nugetApiKey $nugetApiKey
+try{
+    if($build){ Build-All }
+    elseif($setversion){ SetVersion -newversion $newversion }
+    elseif($getversion){ GetExistingVersion | Write-Output }
+    elseif($openciwebsite){ OpenCiWebsite }
+    else{
+        $cmds = @('-build','-setversion','-getversion','-openciwebsite')
+        'Command not found or empty, please pass in one of the following [{0}]' -f ($cmds -join ' ') | Write-Error
     }
+}
+catch{
+    "Build failed with an exception:`n{0}" -f ($_.Exception.Message) |  Write-Error
+    exit 1
 }
