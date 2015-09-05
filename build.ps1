@@ -96,7 +96,7 @@ function EnsureFileReplacerInstlled{
         if(-not (Get-Command -Module file-replacer -Name Replace-TextInFolder -errorAction SilentlyContinue)){
             $fpinstallpath = (Get-NuGetPackage -name file-replacer -version '0.4.0-beta' -binpath)
             if(-not (Test-Path $fpinstallpath)){ throw ('file-replacer folder not found at [{0}]' -f $fpinstallpath) }
-            Import-Module (Join-Path $fpinstallpath 'file-replacer.psm1')
+            Import-Module (Join-Path $fpinstallpath 'file-replacer.psm1') -DisableNameChecking
         }
 
         # make sure it's loaded and throw if not
