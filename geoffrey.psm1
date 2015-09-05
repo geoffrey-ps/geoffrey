@@ -3,10 +3,10 @@ param()
 
 Set-StrictMode -Version Latest
 
-function Get-ScriptDirectory{
+function InternalGet-ScriptDirectory{
     split-path (((Get-Variable MyInvocation -Scope 1).Value).MyCommand.Path)
 }
-$scriptDir = ((Get-ScriptDirectory) + "\")
+$scriptDir = ((InternalGet-ScriptDirectory) + "\")
 
 $global:geoffreysettings = new-object psobject -Property @{
     NuGetPowerShellMinModuleVersion = '0.2.3.1'
@@ -263,14 +263,14 @@ function Invoke-GeoffreyTask{
                 }
 
                 $stopwatch.Stop()
-                Print-TaskExecutionInfo -taskname $taskname -milliseconds $stopwatch.ElapsedMilliseconds
+                Write-TaskExecutionInfo -taskname $taskname -milliseconds $stopwatch.ElapsedMilliseconds
             }
         }
     }
 }
 Set-Alias geoffreyrun Invoke-GeoffreyTask
 
-function Print-TaskExecutionInfo{
+function Write-TaskExecutionInfo{
     [cmdletbinding()]
     param(
         [Parameter(Position=0)]
@@ -770,7 +770,14 @@ function Invoke-GeoffreyLess{
 }
 Set-Alias less Invoke-GeoffreyLess
 
-# todo we should update this to export on the correct items and use
-# $env:IsDeveloperMachine to expose to tests cases
-Export-ModuleMember -function *
+
+if( ($env:IsDeveloperMachine -eq $true) ){
+    # you can set the env var to expose all functions to importer. easy for development.
+    # this is required for pester testing
+    Export-ModuleMember -function *
+}
+else{
+    Export-ModuleMember -function Get-*,Set-*,Invoke-*,Save-*,Test-*,Find-*,Add-*,Remove-*,Test-*,Open-*,New-*,Import-* -Alias psbuild
+}
+
 Export-ModuleMember -Alias *
