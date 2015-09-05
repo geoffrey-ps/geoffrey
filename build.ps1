@@ -22,6 +22,9 @@ param(
     [Parameter(ParameterSetName='setversion',Position=0)]
     [switch]$setversion,
 
+    [Parameter(ParameterSetName='setversion',Position=1,Mandatory=$true)]
+    [string]$newversion,
+
     [Parameter(ParameterSetName='getversion',Position=0)]
     [switch]$getversion,
 
@@ -85,12 +88,14 @@ function EnsureNuGetPowerShellInstlled{
 
 function EnsureFileReplacerInstlled{
     [cmdletbinding()]
-    param(
-        [string]$installUri = 'https://raw.githubusercontent.com/ligershark/nuget-powershell/master/get-nugetps.ps1'
-    )
+    param()
+    begin{
+        EnsureNuGetPowerShellInstlled
+    }
     process{
         if(-not (Get-Command -Module file-replacer -Name Replace-TextInFolder -errorAction SilentlyContinue)){
             $fpinstallpath = (Get-NuGetPackage -name file-replacer -version '0.4.0-beta' -binpath)
+            if(-not (Test-Path $fpinstallpath)){ throw ('file-replacer folder not found at [{0}]' -f $fpinstallpath) }
             Import-Module (Join-Path $fpinstallpath 'file-replacer.psm1')
         }
 
@@ -236,6 +241,34 @@ function Run-Tests{
     }
 }
 
+function Update-FilesWithCommitId{
+    [cmdletbinding()]
+    param(
+        [string]$commitId = ($env:APPVEYOR_REPO_COMMIT),
+
+        [Parameter(Position=2)]
+        [string]$filereplacerVersion = '0.4.0-beta'
+    )
+    begin{
+        EnsureFileReplacerInstlled
+    }
+    process{
+        if(![string]::IsNullOrWhiteSpace($commitId)){
+            'Updating commitId from [{0}] to [{1}]' -f '$(COMMIT_ID)',$commitId | Write-Verbose
+
+            $folder = $scriptDir
+            $include = '*.nuspec'
+            # In case the script is in the same folder as the files you are replacing add it to the exclude list
+            $exclude = "$($MyInvocation.MyCommand.Name);"
+            $replacements = @{
+                '$(COMMIT_ID)'="$commitId"
+            }
+            Replace-TextInFolder -folder $folder -include $include -exclude $exclude -replacements $replacements | Write-Verbose
+            'Replacement complete' | Write-Verbose
+        }
+    }
+}
+
 <#
 .SYNOPSIS 
 This will inspect the publsish nuspec file and return the value for the Version element.
@@ -273,6 +306,7 @@ function SetVersion{
         $include = '*.nuspec;*.ps*1'
         # In case the script is in the same folder as the files you are replacing add it to the exclude list
         $exclude = "$($MyInvocation.MyCommand.Name);"
+        $exclude += ';build.ps1'
         $replacements = @{
             "$oldversion"="$newversion"
         }
@@ -299,6 +333,7 @@ function Build-All{
     [cmdletbinding()]
     param()
     process{
+        Update-FilesWithCommitId
         Build-Projects
         Run-Tests
         Build-NuGetPackage
