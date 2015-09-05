@@ -75,7 +75,7 @@ namespace GeoffreyTrx
 
         private static async Task InstallGeoffreyAsync()
         {
-            HttpWebRequest request = WebRequest.CreateHttp("https://raw.githubusercontent.com/sayedihashimi/geoffrey/master/getgeoffrey.ps1");
+            HttpWebRequest request = WebRequest.CreateHttp("https://raw.githubusercontent.com/geoffrey-ps/geoffrey/master/getgeoffrey.ps1");
             request.UserAgent = "GeoffreyTRX-VS" + typeof(ITaskRunner).Assembly.GetName().Version;
             WebResponse response = await request.GetResponseAsync();
             Stream responseStream = response.GetResponseStream();

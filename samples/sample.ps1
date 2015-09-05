@@ -7,7 +7,7 @@
 #>
 [cmdletbinding()]
 param(
-    [string]$installUri='https://raw.githubusercontent.com/sayedihashimi/geoffrey/master/getgeoffrey.ps1'
+    [string]$installUri='https://raw.githubusercontent.com/geoffrey-ps/geoffrey/master/getgeoffrey.ps1'
 )
 
 function Get-ScriptDirectory{

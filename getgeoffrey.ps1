@@ -1,6 +1,6 @@
 [cmdletbinding()]
 param(
-    [string]$sourceUri = 'https://raw.githubusercontent.com/sayedihashimi/geoffrey/master/geoffrey.psm1',
+    [string]$sourceUri = 'https://raw.githubusercontent.com/geoffrey-ps/geoffrey/master/getgeoffrey.ps1',
     [string]$toolsDir = ("$env:LOCALAPPDATA\LigerShark\tools\")
 )
 
