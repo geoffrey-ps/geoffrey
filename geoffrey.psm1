@@ -14,6 +14,9 @@ $global:geoffreysettings = new-object psobject -Property @{
     GeoffreyPrintTasknameColor = 'Yellow'
     GeoffreyPrintTaskTimeColor = 'Green'
 }
+
+[bool]$watcherLoaded = $false
+
 if(Test-Path env:geoffreyprinttasktimes){
     $global:geoffreysettings.PrintTaskExecutionTimes =($env:geoffreyprinttasktimes)
 }
@@ -770,6 +773,179 @@ function Invoke-GeoffreyLess{
 }
 Set-Alias less Invoke-GeoffreyLess
 
+function InternalEnsure-GeoffreyWatchLoaded{
+    [cmdletbinding()]
+    param()
+    process{
+        if(-not $watcherLoaded){
+            [System.IO.FileInfo[]]$geoffreyWatchSearchPaths = "$scriptDir\Geoffry.Watch.dll","$scriptDir\OutputRoot\Geoffry.Watch.dll"
+            if(Test-Path env:GeoffreyBinPath){
+                $geoffreyWatchSearchPaths += (Join-Path $env:GeoffreyBinPath 'Geoffry.Watch.dll')
+            }
+
+            [bool]$foundwatchassembly = $false
+            [System.IO.FileInfo]$assemblyPath = $null
+            foreach($path in $geoffreyWatchSearchPaths){
+                if(Test-Path $path){
+                    $assemblyPath = $path
+                    $foundwatchassembly = $true
+                    break
+                }
+            }
+
+            if($foundwatchassembly){
+                Add-Type -Path $assemblyPath
+                $watcherLoaded = $true
+                $watchertype = [Geoffry.Watch.Watcher]
+                Register-ObjectEvent -SourceIdentifier "geoffreywatcher-$([guid]::NewGuid())" -InputObject $watchertype -EventName Changed -Action {'.#.... [{0}]' -f ($Event.SourceEventArgs.Token)|Write-Host;$global:eventresult=$event;InternalWatch-OnChanged -token ($Event.SourceEventArgs.Token)  }
+            }
+            else{
+                throw ('Unable to find Geoffry.Watch.dll in search paths [{0}]' -f ($geoffreyWatchSearchPaths -join ';'))
+            }
+        }
+    }
+}
+
+# watch related items
+[hashtable]$watchHandlers = @{}
+
+function global:InternalWatch-OnChanged{
+    [cmdletbinding()]
+    param(
+        [guid]$token
+    )
+    process{
+        'Changed [{0}]' -f $token | Write-Host
+        "{0}`n" -f [DateTime]::Now.ToLongTimeString()|Out-File C:\temp\geoffrey-watcher.txt -Append
+
+        $handler = (InernalGet-GeoffreyWatchFolderHandler -token $token)
+
+        if($handler){
+            'Invoking handler with token [{0}]' -f $token | Write-Host
+            & $handler $token | Write-Host
+        }
+    }
+}
+
+function global:Register-GeoffreyWatchFolder{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position = 0)]
+        [System.IO.DirectoryInfo]$rootDirectory = ($pwd),
+
+        [Parameter(Position = 1)]
+        [string]$globbingPattern = '**/*',
+
+        [Parameter(Position = 2,Mandatory=$true)]
+        [scriptblock]$handler,
+
+        [Parameter(Position = 3)]
+        [int]$waitPeriodMilliseconds = 500
+    )
+    begin{
+        InternalEnsure-GeoffreyWatchLoaded
+    }
+    process{
+        [Geoffry.Watch.WatchDefinition]$watcherdef = New-Object -TypeName 'Geoffry.Watch.WatchDefinition'
+        $watcherdef.GlobbingPattern = $globbingPattern
+        $watcherdef.RootDirectory = $rootDirectory
+
+        'Using pattern [{0}] to watch folder [{1}]' -f ($watcherdef.GlobbingPattern), ($watcherdef.RootDirectory) | Write-Verbose
+        [Geoffry.Watch.WatchDefinition[]]$watchlist = @()
+        $watchlist+=$watcherdef
+        $waitPeriod = [System.TimeSpan]::FromMilliseconds($waitPeriodMilliseconds)
+        $token = [Geoffry.Watch.Watcher]::Subscribe($waitPeriod, $watchlist)
+
+        $wrapper = New-Object -TypeName psobject -Property @{
+            Token = $token
+            WatchHandler = $handler
+            WatcherDef = $watcherdef
+        }
+        $wrapper | Format-Table |Write-Verbose
+        $watchHandlers[$token]=$wrapper
+
+        $token
+    }
+}
+Set-Alias watch Register-GeoffreyWatchFolder
+
+function global:Unregister-GeoffreyWatchFolder{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0)]
+        [guid]$token
+    )
+    process{
+        if($token -ne $null){
+            [Geoffry.Watch.Watcher]::Cancel($token)
+            if($watchHandlers.ContainsKey($token)){
+                'Removing handler for token [{0}]' -f $token | Write-Host            
+                $watchHandlers.Remove($token)
+            }
+        }
+    }
+}
+Set-Alias unwatch UnRegister-GeoffreyWatchFolder
+
+function Unregister-GeoffreyAllWatchFolder{
+    [cmdletbinding()]
+    param()
+    process{
+        $watchHandlers.Clear()
+        [Geoffry.Watch.Watcher]::CancelAll()
+        # cancell all powershell events as well
+        #"geoffreywatcher-$([guid]::NewGuid())"
+        $allevents = Get-Event
+        foreach($someevent in $allevents){
+            [string]$sourceid = $someevent.SourceIdentifier
+            
+            if(-not ([string]::IsNullOrWhiteSpace($sourceid))){
+                if($sourceid.StartsWith('geoffreywatcher')){
+                    Remove-Event -SourceIdentifier $sourceid
+                }
+            }
+        }
+
+        $jobs = Get-Job
+        foreach($job in $jobs){
+            $name = $job.Name
+            if(-not ([string]::IsNullOrWhiteSpace($name))){
+                if($name.StartsWith('geoffreywatcher')){
+                    $job.StopJob()
+                    Remove-Job $job
+                }
+            }
+        }
+    }
+}
+Set-Alias unwatchall Unregister-GeoffreyAllWatchFolder
+
+# when he module is reloaded all existing handlers should be cancelled for this session
+InternalEnsure-GeoffreyWatchLoaded
+Unregister-GeoffreyAllWatchFolder
+[Geoffry.Watch.Watcher]::CancelAll()
+
+function InernalGet-GeoffreyWatchFolderHandler{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0)]
+        [guid]$token
+    )
+    process{
+        # return the handler if it exists
+        if($token -ne $null -and $watchHandlers.ContainsKey($token)){            
+            $watchHandlers[$token]
+        }        
+    }
+}
+
+function InternalGet-GeoffreyWatchHandlers{
+    [cmdletbinding()]
+    param()    
+    process{
+        $watchHandlers
+    }
+}
 
 if( ($env:IsDeveloperMachine -eq $true) ){
     # you can set the env var to expose all functions to importer. easy for development.
@@ -777,7 +953,7 @@ if( ($env:IsDeveloperMachine -eq $true) ){
     Export-ModuleMember -function *
 }
 else{
-    Export-ModuleMember -function Get-*,Set-*,Invoke-*,Save-*,Test-*,Find-*,Add-*,Remove-*,Test-*,Open-*,New-*,Import-* -Alias psbuild
+    Export-ModuleMember -function Get-*,Set-*,Invoke-*,Save-*,Test-*,Find-*,Add-*,Remove-*,Test-*,Open-*,New-*,Import-*,Register-*,Unregister-* -Alias psbuild
 }
 
 Export-ModuleMember -Alias *

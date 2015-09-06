@@ -41,5 +41,15 @@ namespace Geoffry.Watch
             Environments.TryRemove(token, out environment);
             environment?.StopWatching();
         }
+
+        public static void CancelAll() {
+            Environments.Clear();
+        }
+
+        public static ConcurrentDictionary<Guid, WatchEnvironment> GetWatchers {
+            get {
+                return Environments;
+            }
+        }
     }
 }

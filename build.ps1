@@ -48,6 +48,8 @@ if([string]::IsNullOrWhiteSpace($outputPath)){
     $outputPath = (Join-Path $scriptDir 'OutputRoot')
 }
 
+$env:GeoffreyBinPath = $outputPath
+
 [System.IO.DirectoryInfo]$outputPathNuget = (Join-Path $outputPath '_nuget-pkg')
 
 function EnsurePsbuildInstlled{
@@ -211,6 +213,9 @@ function Clean{
         }
     }
 }
+
+# TODO: Figure out a way to run the tests in a new powershell session
+#       so that the watch assembly can be unloaded
 
 function Run-Tests{
     [cmdletbinding()]
