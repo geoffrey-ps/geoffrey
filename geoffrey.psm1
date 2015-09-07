@@ -797,7 +797,7 @@ function InternalEnsure-GeoffreyWatchLoaded{
                 Add-Type -Path $assemblyPath
                 $watcherLoaded = $true
                 $watchertype = [Geoffry.Watch.Watcher]
-                Register-ObjectEvent -SourceIdentifier "geoffreywatcher-$([guid]::NewGuid())" -InputObject $watchertype -EventName Changed -Action {'.#.... [{0}]' -f ($Event.SourceEventArgs.Token)|Write-Host;$global:eventresult=$event;InternalWatch-OnChanged -token ($Event.SourceEventArgs.Token)  }
+                Register-ObjectEvent -SourceIdentifier "geoffreywatcher-$([guid]::NewGuid())" -InputObject $watchertype -EventName Changed -Action {InternalWatch-OnChanged -sourcetoken ($Event.SourceEventArgs.Token)  }
             }
             else{
                 throw ('Unable to find Geoffry.Watch.dll in search paths [{0}]' -f ($geoffreyWatchSearchPaths -join ';'))
@@ -807,23 +807,23 @@ function InternalEnsure-GeoffreyWatchLoaded{
 }
 
 # watch related items
-[hashtable]$watchHandlers = @{}
+[hashtable]$global:watchHandlers = @{}
 
 function global:InternalWatch-OnChanged{
     [cmdletbinding()]
     param(
-        [guid]$token
+        $sourcetoken
     )
     process{
-        'Changed [{0}]' -f $token | Write-Host
+        'Changed [{0}]' -f $sourcetoken | Write-Host
         "{0}`n" -f [DateTime]::Now.ToLongTimeString()|Out-File C:\temp\geoffrey-watcher.txt -Append
 
-        $handler = (InernalGet-GeoffreyWatchFolderHandler -token $token)
+        $handler = (InernalGet-GeoffreyWatchFolderHandler -token ([guid]$sourcetoken))
 
         if($handler){
-            'Invoking handler with token [{0}]' -f $token | Write-Host
-            & $handler $token | Write-Host
-        }
+            'Invoking handler for token [{0}]' -f $sourcetoken | Write-Host
+            . ($handler.WatchHandler) | Write-Host
+        }     
     }
 }
 
@@ -923,9 +923,8 @@ Set-Alias unwatchall Unregister-GeoffreyAllWatchFolder
 # when he module is reloaded all existing handlers should be cancelled for this session
 InternalEnsure-GeoffreyWatchLoaded
 Unregister-GeoffreyAllWatchFolder
-[Geoffry.Watch.Watcher]::CancelAll()
 
-function InernalGet-GeoffreyWatchFolderHandler{
+function global:InernalGet-GeoffreyWatchFolderHandler{
     [cmdletbinding()]
     param(
         [Parameter(Position=0)]
