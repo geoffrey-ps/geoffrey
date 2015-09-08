@@ -2,7 +2,7 @@
 
 ![geoffrey logo](resources/geoffrey-face.png)
 
-[![Build status](https://ci.appveyor.com/api/projects/status/67if3jcubral0wfh?svg=true)](https://ci.appveyor.com/project/sayedihashimi/geoffrey)
+[![Build status](https://ci.appveyor.com/api/projects/status/cit12s48enphxi3b?svg=true)](https://ci.appveyor.com/project/sayedihashimi/geoffrey)
 
 #### download and install geoffrey
 <code style="background-color:grey">(new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/geoffrey-ps/geoffrey/master/getgeoffrey.ps1") | iex</code>
