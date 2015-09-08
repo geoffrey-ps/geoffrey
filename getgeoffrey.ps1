@@ -49,6 +49,7 @@ function GetPsModulesPath{
 # install script
 
 try{
+    EnsureNuGetPowerShellInstlled
     # get the module locally
     $installpath = (Get-NuGetPackage -name geoffrey -version 0.0.2-beta -binpath)
 

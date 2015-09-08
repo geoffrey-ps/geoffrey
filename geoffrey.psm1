@@ -847,7 +847,7 @@ function global:Register-GeoffreyWatchFolder{
         [Parameter(Position = 2)]
         [int]$waitPeriodMilliseconds = 500,
 
-        [Parameter(Position=3)]
+        [Parameter(Position=3,Mandatory=$true)]
         [string[]]$taskToExecute
     )
     begin{
