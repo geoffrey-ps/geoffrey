@@ -7,7 +7,7 @@
 ### Initial concept
 
 ```powershell
-$geoffrey = (new-object Net.WebClient).DownloadString("http://getgeoffrey.com/getgeoffrey.ps1") | iex
+(new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/geoffrey-ps/geoffrey/master/getgeoffrey.ps1") | iex
 
 requires geoffrey-less
 requires geoffrey-coffee
