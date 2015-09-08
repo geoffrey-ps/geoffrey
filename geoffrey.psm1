@@ -219,10 +219,13 @@ function Invoke-GeoffreyTask{
     param(
         [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
         [ValidateNotNullOrEmpty()]
-        [string[]]$name
+        [string[]]$name,
+
+        [switch]
+        $force
     )
     process{
-        if($global:geoffreycontext.RunTasks -eq $true){
+        if( ($global:geoffreycontext.RunTasks -eq $true) -or $force){
             # run the init task if not already
             if($global:geoffreycontext.HasRunInitTask -ne $true){
                 # set this before calling the task to ensure the if only passes once
@@ -238,12 +241,14 @@ function Invoke-GeoffreyTask{
                 [System.Diagnostics.Stopwatch]$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
                 # skip executing the task if already executed
-                if($global:geoffreycontext.TasksExecuted.Contains($taskname)){
+                if( ($global:geoffreycontext.TasksExecuted.Contains($taskname)) -and (-not $force) ){
                     'Skipping task [{0}] because it has already been executed' -f $taskname | Write-Verbose
                     continue;
                 }
 
-                $global:geoffreycontext.TasksExecuted.Add($taskname)
+                if(-not $global:geoffreycontext.TasksExecuted.Contains($taskname)){
+                    $global:geoffreycontext.TasksExecuted.Add($taskname)
+                }                
 
                 $tasktorun = $global:geoffreycontext.Tasks[$taskname]
 
@@ -815,14 +820,17 @@ function global:InternalWatch-OnChanged{
         $sourcetoken
     )
     process{
-        'Changed [{0}]' -f $sourcetoken | Write-Host
+        'Changed [{0}]' -f $sourcetoken | Write-Verbose
         "{0}`n" -f [DateTime]::Now.ToLongTimeString()|Out-File C:\temp\geoffrey-watcher.txt -Append
 
-        $handler = (InernalGet-GeoffreyWatchFolderHandler -token ([guid]$sourcetoken))
+        $wrapper = (InernalGet-GeoffreyWatchFolderHandlerWrapper -token ([guid]$sourcetoken))
 
-        if($handler){
-            'Invoking handler for token [{0}]' -f $sourcetoken | Write-Host
-            . ($handler.WatchHandler) | Write-Host
+        if($wrapper){
+            'Invoking handler for token [{0}]' -f $sourcetoken | Write-Verbose
+
+            'Executing task(s) [{0}]' -f ($wrapper.TaskToExecute -join ',') | Write-Verbose
+
+            Invoke-GeoffreyTask -name ($wrapper.TaskToExecute) -force
         }     
     }
 }
@@ -836,11 +844,11 @@ function global:Register-GeoffreyWatchFolder{
         [Parameter(Position = 1)]
         [string]$globbingPattern = '**/*',
 
-        [Parameter(Position = 2,Mandatory=$true)]
-        [scriptblock]$handler,
+        [Parameter(Position = 2)]
+        [int]$waitPeriodMilliseconds = 500,
 
-        [Parameter(Position = 3)]
-        [int]$waitPeriodMilliseconds = 500
+        [Parameter(Position=3)]
+        [string[]]$taskToExecute
     )
     begin{
         InternalEnsure-GeoffreyWatchLoaded
@@ -858,8 +866,8 @@ function global:Register-GeoffreyWatchFolder{
 
         $wrapper = New-Object -TypeName psobject -Property @{
             Token = $token
-            WatchHandler = $handler
             WatcherDef = $watcherdef
+            TaskToExecute = $taskToExecute
         }
         $wrapper | Format-Table |Write-Verbose
         $watchHandlers[$token]=$wrapper
@@ -879,7 +887,7 @@ function global:Unregister-GeoffreyWatchFolder{
         if($token -ne $null){
             [Geoffry.Watch.Watcher]::Cancel($token)
             if($watchHandlers.ContainsKey($token)){
-                'Removing handler for token [{0}]' -f $token | Write-Host            
+                'Removing handler for token [{0}]' -f $token | Write-Verbose
                 $watchHandlers.Remove($token)
             }
         }
@@ -924,7 +932,7 @@ Set-Alias unwatchall Unregister-GeoffreyAllWatchFolder
 InternalEnsure-GeoffreyWatchLoaded
 Unregister-GeoffreyAllWatchFolder
 
-function global:InernalGet-GeoffreyWatchFolderHandler{
+function global:InernalGet-GeoffreyWatchFolderHandlerWrapper{
     [cmdletbinding()]
     param(
         [Parameter(Position=0)]
