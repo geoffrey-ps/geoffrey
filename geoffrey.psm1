@@ -376,11 +376,14 @@ If dest has more than one value then it should be 1:1 with the streams
 function Invoke-GeoffreyDest{
     [cmdletbinding()]
     param(
-        [Parameter(ValueFromPipeline=$true)]
+        [Parameter(ValueFromPipeline=$true,Position=1)]
         [object[]]$sourceStreams, # type is GeoffreySourcePipeObj
 
         [Parameter(Position=0)]
-        [string[]]$destination
+        [string[]]$destination,
+
+        [Parameter(Position=2)]
+        [switch]$append
     )
     process{
     # todo: if the dest folder doesn't exist then create it
@@ -388,6 +391,7 @@ function Invoke-GeoffreyDest{
         $destStreams = @{}
         $strmsToClose = @()
         try{
+            $filesWritten = @()
             # see if we are writing to a single file or multiple
             foreach($currentStreamPipeObj in $sourceStreams){
                 $currentStream = ($currentStreamPipeObj.SourceStream)
@@ -400,6 +404,14 @@ function Invoke-GeoffreyDest{
 
                 if(-not (test-path (Split-Path $actualDest -Parent))){
                     New-Item -ItemType Directory -Path (Split-Path $actualDest -Parent) | Write-Verbose
+                }
+
+                if($filesWritten -notcontains $actualDest){
+                    # if the file exists delete it first because it's the first write
+                    if(-not $append){
+                        Remove-Item $actualDest | Write-Verbose
+                    }
+                    $filesWritten += $actualDest
                 }
 
                 # write the stream to the dest and close the source stream
