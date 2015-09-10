@@ -21,6 +21,24 @@ function Load-GeoffreyModule{
     }
 }
 
+function GetPsModulesPath{
+    [cmdletbinding()]
+    param()
+    process{
+        $Destination = $null
+        if(Test-Path 'Env:PSModulePath'){
+            $ModulePaths = @($Env:PSModulePath -split ';')
+
+            $ExpectedUserModulePath = Join-Path -Path ([Environment]::GetFolderPath('MyDocuments')) -ChildPath WindowsPowerShell\Modules
+            $Destination = $ModulePaths | Where-Object { $_ -eq $ExpectedUserModulePath}
+            if (-not $Destination) {
+                $Destination = $ModulePaths | Select-Object -Index 0
+            }
+        }
+        $Destination
+    }
+}
+
 function Remove-GlobalGeoffreyModule{
     [cmdletbinding()]
     param()
