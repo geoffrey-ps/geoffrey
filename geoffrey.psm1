@@ -369,6 +369,22 @@ function Invoke-GeoffreySource{
 }
 set-alias src Invoke-GeoffreySource
 
+function Ensure-ParentDirExists{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipeline=$true)]
+        [System.IO.FileInfo[]]$filePath
+    )
+    process{
+        foreach($file in $filePath){
+            if(-not ($file.Directory.Exists)){
+                '*** creating directory at [{0}]' -f ($file.Directory.FullName) | Write-Host -ForegroundColor Cyan
+                $file.Directory.Create() | Write-Verbose
+            }
+        }
+    }
+}
+
 <#
 If dest is a single file then place all streams into the same file
 If dest has more than one value then it should be 1:1 with the streams
@@ -398,13 +414,10 @@ function Invoke-GeoffreyDest{
                     $actualDest = (Join-Path $actualDest ($currentStreamPipeObj.SourcePath.Name))
                 }
 
-                if(-not (test-path (Split-Path $actualDest -Parent))){
-                    New-Item -ItemType Directory -Path (Split-Path $actualDest -Parent) | Write-Verbose
-                }
-
                 # write the stream to the dest and close the source stream
                 try{
                     if( ($destStreams[$actualDest]) -eq $null){
+                        $actualDest | Ensure-ParentDirExists
                         $destStreams[$actualDest] = [System.IO.File]::OpenWrite($actualDest)
                     }
 

@@ -133,6 +133,7 @@ function Build-Projects{
     [cmdletbinding()]
     param()
     process {
+        $env:IsDeveloperMachine=$true
         if($outputPath -eq $null){throw 'outputpath is null'}
 
         $projectToBuild = Join-Path $scriptDir 'src\Geoffrey.sln'
