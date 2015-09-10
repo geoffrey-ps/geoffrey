@@ -378,7 +378,6 @@ function Ensure-ParentDirExists{
     process{
         foreach($file in $filePath){
             if(-not ($file.Directory.Exists)){
-                '*** creating directory at [{0}]' -f ($file.Directory.FullName) | Write-Host -ForegroundColor Cyan
                 $file.Directory.Create() | Write-Verbose
             }
         }

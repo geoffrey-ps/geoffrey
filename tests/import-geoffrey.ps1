@@ -21,4 +21,19 @@ function Load-GeoffreyModule{
     }
 }
 
+function Remove-GlobalGeoffreyModule{
+    [cmdletbinding()]
+    param()
+    process{
+        $modsfolder = GetPsModulesPath
+        if(-not [string]::IsNullOrEmpty($modsfolder)){
+            [System.IO.FileInfo]$globalmodsinstallpath = (Join-Path $modsfolder 'geoffrey')
+            if(Test-Path $globalmodsinstallpath){
+                Remove-Item $globalmodsinstallpath -Recurse
+            }
+        }
+    }
+}
+
+Remove-GlobalGeoffreyModule
 Load-GeoffreyModule
