@@ -398,6 +398,10 @@ function Invoke-GeoffreyDest{
                     $actualDest = (Join-Path $actualDest ($currentStreamPipeObj.SourcePath.Name))
                 }
 
+                if(-not (test-path (Split-Path $actualDest -Parent))){
+                    New-Item -ItemType Directory -Path (Split-Path $actualDest -Parent) | Write-Verbose
+                }
+
                 # write the stream to the dest and close the source stream
                 try{
                     if( ($destStreams[$actualDest]) -eq $null){
@@ -407,6 +411,9 @@ function Invoke-GeoffreyDest{
                     [ValidateNotNull()]$streamToWrite = $destStreams[$actualDest]
                     [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
                     [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $streamToWrite
+                    $strmsToClose += $reader
+                    $strmsToClose += $writer
+
                     $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null
 
                     # todo: buffer this
@@ -417,9 +424,6 @@ function Invoke-GeoffreyDest{
                     $writer.Flush() | Out-Null
 
                     $currentStream.Flush() | Out-Null
-
-                    $strmsToClose += $reader
-                    $strmsToClose += $writer
 
                     # return the file to the pipeline
                     Get-Item $actualDest

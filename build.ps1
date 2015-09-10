@@ -18,6 +18,9 @@ param(
     [Parameter(ParameterSetName='build',Position=5)]
     [string]$nugetApiKey = ($env:NuGetApiKey),
 
+    [Parameter(ParameterSetName='build',Position=6)]
+    [switch]$notests,
+
     # version parameters
     [Parameter(ParameterSetName='setversion',Position=0)]
     [switch]$setversion,
@@ -340,7 +343,13 @@ function Build-All{
     process{
         Update-FilesWithCommitId
         Build-Projects
-        Run-Tests
+        if(-not $notests){
+            Run-Tests
+        }
+        else{
+            $importscriptpath = (Join-Path $scriptDir 'tests\import-geoffrey.ps1')
+            . $importscriptpath
+        }
         Build-NuGetPackage
 
         # publish to nuget if selected

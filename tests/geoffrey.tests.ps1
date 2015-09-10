@@ -206,27 +206,28 @@ Describe 'Invoke-GeoffreySource tests'{
 Describe 'Invoke-GeoffreyDest tests'{
     $script:tempfilecontent1 = 'some content here1'
     $script:tempfilepath1 = 'Invoke-GeoffreyDest\temp1.txt'
-    $script:tempfilepath11 = 'Invoke-GeoffreyDest\temp11.txt'
+    $script:tempfilepath1_1 = 'Invoke-GeoffreyDest\temp1_1.txt'
 
     $script:tempfilecontent2 = 'some content here2'
     $script:tempfilepath2 = 'Invoke-GeoffreyDest\temp2.txt'
-    $script:tempfilepath12 = 'Invoke-GeoffreyDest\temp12.txt'
+    $script:tempfilepath1_2 = 'Invoke-GeoffreyDest\temp1_2.txt'
 
     $script:tempfilecontent3 = 'some content here3'
     $script:tempfilepath3 = 'Invoke-GeoffreyDest\temp3.txt'
-    $script:tempfilepath13 = 'Invoke-GeoffreyDest\temp13.txt'
+    $script:tempfilepath1_3 = 'Invoke-GeoffreyDest\temp1_3.txt'
 
     Setup -File -Path $script:tempfilepath1 -Content $script:tempfilecontent1
     Setup -File -Path $script:tempfilepath2 -Content $script:tempfilecontent2
     Setup -File -Path $script:tempfilepath3 -Content $script:tempfilecontent3
 
     # todo: need to create duplicates because streams are not closing correclty, fix that then this
-    Setup -File -Path $script:tempfilepath11 -Content $script:tempfilecontent1
-    Setup -File -Path $script:tempfilepath12 -Content $script:tempfilecontent2
-    Setup -File -Path $script:tempfilepath13 -Content $script:tempfilecontent3
+    Setup -File -Path $script:tempfilepath1_1 -Content $script:tempfilecontent1
+    Setup -File -Path $script:tempfilepath1_2 -Content $script:tempfilecontent2
+    Setup -File -Path $script:tempfilepath1_3 -Content $script:tempfilecontent3
 
     It 'will copy a single file to the dest'{
-        $path1 = Join-Path $TestDrive $script:tempfilepath1
+        Setup -File -Path 'invoke-geoffreydest\copysingle\temp.txt' -Content $script:tempfilecontent1
+        $path1 = Join-Path $TestDrive 'invoke-geoffreydest\copysingle\temp.txt'
         $result = Invoke-GeoffreySource -sourceFiles $path1
         $dest = (Join-Path $TestDrive 'dest01.txt')
         $dest | Should not exist
@@ -234,15 +235,34 @@ Describe 'Invoke-GeoffreyDest tests'{
         $dest | Should exist
     }
 
+    It 'will create dest dir if it does not exist'{
+        Setup -File -Path 'invoke-geoffreydest\nodest\temp.txt' -Content $script:tempfilecontent1
+
+        $path1 = Join-Path $TestDrive 'invoke-geoffreydest\nodest\temp.txt'
+        $result = Invoke-GeoffreySource -sourceFiles $path1
+        $destFolder = (Join-Path $TestDrive 'nodest\newfolder01')
+        $dest = (Join-Path $destFolder 'dest01.txt')
+        $destFolder | Should not exist
+        $dest | Should not exist
+        Invoke-GeoffreyDest -sourceStreams $result -destination $dest
+        $destFolder | Should exist
+        $dest | Should exist
+    }
+
     # TODO: streams not being closed correctly are causing issues here
     It 'will copy multiple files to multiple destinations'{
-        $path1 = Join-Path $TestDrive $script:tempfilepath1
-        $path2 = Join-Path $TestDrive $script:tempfilepath2
-        $path3 = Join-Path $TestDrive $script:tempfilepath3
+        $path1 = Join-Path $TestDrive 'invoke-geoffreydest\copymultiple01\temp01.txt'
+        $path2 = Join-Path $TestDrive 'invoke-geoffreydest\copymultiple01\temp02.txt'
+        $path3 = Join-Path $TestDrive 'invoke-geoffreydest\copymultiple01\temp03.txt'
+        New-Item -ItemType Directory -Path (Join-Path $TestDrive 'invoke-geoffreydest\copymultiple01')
+        $script:tempfilecontent1|Out-File -FilePath $path1
+        $script:tempfilecontent1|Out-File -FilePath $path2
+        $script:tempfilecontent1|Out-File -FilePath $path3
+
         $result = Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3
-        $dest1 = (Join-Path $TestDrive 'dest01-01.txt')
-        $dest2 = (Join-Path $TestDrive 'dest01-02.txt')
-        $dest3 = (Join-Path $TestDrive 'dest01-03.txt')
+        $dest1 = (Join-Path $TestDrive 'invoke-geoffreydest\copymultiple01\dest01-01.txt')
+        $dest2 = (Join-Path $TestDrive 'invoke-geoffreydest\copymultiple01\dest01-02.txt')
+        $dest3 = (Join-Path $TestDrive 'invoke-geoffreydest\copymultiple01\dest01-03.txt')
 
         $dest1 | Should not exist
         $dest2 | Should not exist
@@ -254,9 +274,12 @@ Describe 'Invoke-GeoffreyDest tests'{
     }
     
     It 'will copy multiple files to a single dest'{
-        $path1 = Join-Path $TestDrive $script:tempfilepath11
-        $path2 = Join-Path $TestDrive $script:tempfilepath12
-        $path3 = Join-Path $TestDrive $script:tempfilepath13
+        Setup -File -Path 'invoke-geoffreydest\copymultiple02\temp01.txt' -Content $script:tempfilecontent1
+        Setup -File -Path 'invoke-geoffreydest\copymultiple02\temp02.txt' -Content $script:tempfilecontent2
+        Setup -File -Path 'invoke-geoffreydest\copymultiple02\temp03.txt' -Content $script:tempfilecontent3
+        $path1 = Join-Path $TestDrive 'invoke-geoffreydest\copymultiple02\temp01.txt'
+        $path2 = Join-Path $TestDrive 'invoke-geoffreydest\copymultiple02\temp02.txt'
+        $path3 = Join-Path $TestDrive 'invoke-geoffreydest\copymultiple02\temp03.txt'
         $result = Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3
         $dest1 = (Join-Path $TestDrive 'dest02-01.txt')
 

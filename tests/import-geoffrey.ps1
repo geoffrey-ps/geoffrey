@@ -11,7 +11,6 @@ function Load-GeoffreyModule{
         [string]$geoffreyModulePath = (Join-Path $scriptDir '..\geoffrey.psm1')
     )
     process{
-        $env:IsDeveloperMachine = $true
         if(-not (Test-Path $geoffreyModulePath)){
             throw ('Unable to find geoffrey at [{0}]' -f $geoffreyModulePath)
         }
