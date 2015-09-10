@@ -51,7 +51,7 @@ function GetPsModulesPath{
 try{
     EnsureNuGetPowerShellInstlled
     # get the module locally
-    $installpath = (Get-NuGetPackage -name geoffrey -version 0.0.2-beta -binpath)
+    $installpath = (Get-NuGetPackage -name geoffrey -version 0.0.3-beta -binpath)
 
     # if the module is imported then remove it
     if(Get-Module geoffrey){
