@@ -311,6 +311,27 @@ function Write-TaskExecutionInfo{
     }
 }
 
+function InternalGet-GeoffreyPipelineObject{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipeline=$true)]
+        [object[]]$streamObjects
+    )
+    end{
+        if($streamObjects -ne $null){
+            $pipelineObj = New-Object -TypeName psobject -Property @{
+                StreamObjects = @()
+            }
+            foreach($streamobj in $streamObjects){
+                $pipelineObj.StreamObjects += $streamobj
+            }
+
+            # return the result
+            $pipelineObj
+        }
+    }
+}
+
 function InternalGet-GeoffreyStreamObject{
     [cmdletbinding()]
     param(
@@ -395,7 +416,7 @@ function Invoke-GeoffreySource{
         }
 
         # return the results
-        $returnobj
+        InternalGet-GeoffreyPipelineObject -streamObjects $returnobj
     }
 }
 set-alias src Invoke-GeoffreySource
@@ -423,7 +444,7 @@ function Invoke-GeoffreyDest{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true,Position=1)]
-        [object[]]$sourceStreams, # type is GeoffreySourcePipeObj
+        [object]$pipelineObj, # type is GeoffreyPipelineObject
 
         [Parameter(Position=0)]
         [string[]]$destination,
@@ -439,6 +460,7 @@ function Invoke-GeoffreyDest{
             $filesWritten = @()
             # see if we are writing to a single file or multiple
             $returnobj = @()
+            $sourceStreams = $pipelineObj.StreamObjects
             foreach($currentStreamPipeObj in $sourceStreams){
                 $currentStream = ($currentStreamPipeObj.SourceStream)
                 $actualDest = $destination[$currentIndex]
@@ -493,7 +515,8 @@ function Invoke-GeoffreyDest{
             }
 
             # return the results
-            $returnobj
+            InternalGet-GeoffreyPipelineObject -streamObjects $returnobj
+
         }
         finally{
             foreach($strm in $strmsToClose){
@@ -515,7 +538,7 @@ function Invoke-GeoffreyCombine{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true,Position=1)]
-        [object[]]$sourceStreams # type is GeoffreySourcePipeObj
+        [object]$pipelineObj # type is GeoffreyPipelineObject
     )
     process{}
     end{
@@ -529,6 +552,7 @@ function Invoke-GeoffreyCombine{
 
         try{
             # see if we are writing to a single file or multiple
+            $sourceStreams = $pipelineObj.StreamObjects
             foreach($currentStreamPipeObj in $sourceStreams){
                 $currentStream = ($currentStreamPipeObj.SourceStream)
                 [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
@@ -555,7 +579,7 @@ function Invoke-GeoffreyCombine{
             $writer.Dispose()
 
             # return the combined object here
-            InternalGet-GeoffreyStreamObject -sourceStream $streamtoreturn
+            InternalGet-GeoffreyPipelineObject -streamObjects (InternalGet-GeoffreyStreamObject -sourceStream $streamtoreturn)
         }
         catch{
                 throw ("An error occured during writing to the destination. Exception: {0}`r`n{1}" -f $_.Exception,(Get-PSCallStack|Out-String))
@@ -622,7 +646,7 @@ function Invoke-GeoffreyMinifyCss{
     [cmdletbinding()]
     param(
         [Parameter(Position=0,ValueFromPipeline=$true)]
-        [object[]]$sourceStreams,  # type is GeoffreySourcePipeObj
+        [object]$pipelineObj,  # type is GeoffreyPipelineObject
 
         [Parameter(Position=1)]
         [string]$settingsJson,
@@ -657,7 +681,7 @@ function Invoke-GeoffreyMinifyCss{
         }
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
     }
-    process{
+    end{
         [Microsoft.Ajax.Utilities.CssSettings]$csssettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CssSettings'
         if(-not [string]::IsNullOrWhiteSpace($settingsJson)){
             Add-Type -Path (Join-Path (Get-NuGetPackage newtonsoft.json -version '6.0.8' -binpath) Newtonsoft.Json.dll)
@@ -675,6 +699,8 @@ function Invoke-GeoffreyMinifyCss{
             }
         }
 
+        $sourceStreams = $pipelineObj.StreamObjects
+        $streamObjects = @()
         foreach($cssstreampipeobj in $sourceStreams){
             $cssstream = ($cssstreampipeobj.SourceStream)
             # minify the stream and return
@@ -691,8 +717,11 @@ function Invoke-GeoffreyMinifyCss{
             $stringwriter.Flush() | Out-Null
             $memStream.Position = 0
             # return the stream to the pipeline
-            InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
+            $streamObjects += (InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath))
         }
+
+        # return the results
+        InternalGet-GeoffreyPipelineObject -streamObjects $streamObjects
     }
 }
 Set-Alias minifycss Invoke-GeoffreyMinifyCss -Description 'This alias is deprecated use cssmin instead'
@@ -770,7 +799,7 @@ function Invoke-GeoffreyMinifyJavaScript{
         # note: parameters that have the same name as CodeSettings properties
         #       will get passed to CodeSettings
         [Parameter(ValueFromPipeline=$true,Position=0)]
-        [object[]]$sourceStreams,  # type is GeoffreySourcePipeObj
+        [object]$pipelineObj,  # type is GeoffreyPipelineObject
 
         [Parameter(Position=1)]
         [string]$settingsJson,
@@ -813,7 +842,7 @@ function Invoke-GeoffreyMinifyJavaScript{
         }
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
     }
-    process{
+    end{
         [Microsoft.Ajax.Utilities.CodeSettings]$codeSettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CodeSettings'
         if(-not [string]::IsNullOrWhiteSpace($settingsJson)){
             # convertfrom-json doesn't work in powershell < 5 for CodeSettings. Instead use json.net
@@ -832,6 +861,8 @@ function Invoke-GeoffreyMinifyJavaScript{
             }
         }
 
+        $sourceStreams = $pipelineObj.StreamObjects
+        $streamObjects = @()
         foreach($jsstreampipeobj in $sourceStreams){
             $jsstream = ($jsstreampipeobj.SourceStream)
             # minify the stream and return
@@ -846,9 +877,11 @@ function Invoke-GeoffreyMinifyJavaScript{
             $stringwriter.Flush() | Out-Null
             $memStream.Position = 0
 
-            # return the stream to the pipeline
-            InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($jsstreampipeobj.SourcePath)
+            $streamObjects += (InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($jsstreampipeobj.SourcePath))
         }
+
+        # return the results
+        InternalGet-GeoffreyPipelineObject -streamObjects $streamObjects
     }
 }
 Set-Alias minifyjs Invoke-GeoffreyMinifyJavaScript -Description 'This alias is deprecated use jsmin instead'
@@ -859,7 +892,7 @@ function Invoke-GeoffreyLess{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [object[]]$sourceStreams  # type is GeoffreySourcePipeObj        
+        [object]$pipelineObj  # type is GeoffreyPipelineObject
     )
     begin{
         if([string]::IsNullOrEmpty($script:lessassemblypath)){
@@ -873,7 +906,9 @@ function Invoke-GeoffreyLess{
             Add-Type -Path $assemblyPath | Out-Null
         }
     }
-    process{
+    end{
+        $sourceStreams = $pipelineObj.StreamObjects
+        $streamObjects = @()
         foreach($lessstreampipeobj in $sourceStreams){
             $lessstream = ($lessstreampipeobj.SourceStream)
             # read the file and compile it
@@ -887,9 +922,11 @@ function Invoke-GeoffreyLess{
             $stringwriter.Flush() | Out-Null
             $memStream.Position = 0
 
-            # return the stream to the pipeline
-            InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($lessstreampipeobj.SourcePath)
+            $streamObjects += (InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($lessstreampipeobj.SourcePath))
         }
+
+        # return the results
+        InternalGet-GeoffreyPipelineObject -streamObjects $streamObjects
     }
 }
 Set-Alias less Invoke-GeoffreyLess

@@ -185,9 +185,9 @@ Describe 'Invoke-GeoffreySource tests'{
         $path1 = Join-Path $TestDrive $script:tempfilepath1
         $result = Invoke-GeoffreySource -sourceFiles $path1
         $result | Should not be $null
-        $result.SourceStream | Should not be $null
-        $result.SourcePath | Should be $path1
-        $result.SourceStream.Dispose()
+        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].SourcePath | Should be $path1
+        $result.StreamObjects[0].SourceStream.Dispose()
     }
 
     It 'given more than one file returns the streams stream'{
@@ -197,9 +197,9 @@ Describe 'Invoke-GeoffreySource tests'{
 
         $result = Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3
         $result | Should not be $null
-        $result  | % {$_.SourceStream | Should not be $null}
-        $result.SourcePath | Should be $path1,$path2,$path3
-        $result | % {$_.SourceStream.Dispose()}
+        $result  | % {$_.StreamObjects[0].SourceStream | Should not be $null}
+        $result.StreamObjects[0].SourcePath | Should be $path1,$path2,$path3
+        $result | % {$_.StreamObjects[0].SourceStream.Dispose()}
     }
 }
 
@@ -231,7 +231,7 @@ Describe 'Invoke-GeoffreyDest tests'{
         $result = Invoke-GeoffreySource -sourceFiles $path1
         $dest = (Join-Path $TestDrive 'dest01.txt')
         $dest | Should not exist
-        Invoke-GeoffreyDest -sourceStreams $result -destination $dest
+        Invoke-GeoffreyDest -pipelineObj $result -destination $dest
         $dest | Should exist
     }
 
@@ -244,7 +244,7 @@ Describe 'Invoke-GeoffreyDest tests'{
         $dest = (Join-Path $destFolder 'dest01.txt')
         $destFolder | Should not exist
         $dest | Should not exist
-        Invoke-GeoffreyDest -sourceStreams $result -destination $dest
+        Invoke-GeoffreyDest -pipelineObj $result -destination $dest
         $destFolder | Should exist
         $dest | Should exist
     }
@@ -267,7 +267,7 @@ Describe 'Invoke-GeoffreyDest tests'{
         $dest1 | Should not exist
         $dest2 | Should not exist
         $dest3 | Should not exist
-        Invoke-GeoffreyDest -sourceStreams $result -destination $dest1,$dest2,$dest3
+        Invoke-GeoffreyDest -pipelineObj $result -destination $dest1,$dest2,$dest3
         $dest1 | Should exist
         $dest2 | Should exist
         $dest3 | Should exist
@@ -284,7 +284,7 @@ Describe 'Invoke-GeoffreyDest tests'{
         $dest1 = (Join-Path $TestDrive 'dest02-01.txt')
 
         $dest1 | Should not exist
-        Invoke-GeoffreyDest -sourceStreams $result -destination $dest1
+        Invoke-GeoffreyDest -pipelineObj $result -destination $dest1
         $dest1 | Should exist
     }
 }
@@ -302,7 +302,27 @@ Describe 'Invoke-GeoffreyCombine tests'{
         [System.IO.FileInfo]$destfile = (Join-Path $TestDrive 'invoke-geoffreycombine\dest.css')
         Test-Path ($destfile.FullName) | should not be $true
 
-        $result = (Invoke-GeoffreyDest -destination $destFile -sourceStreams (Invoke-GeoffreyCombine -sourceStreams (Invoke-GeoffreySource -sourceFiles $path01,$path01) ))
+        $result = (Invoke-GeoffreyDest -destination $destFile -pipelineObj (Invoke-GeoffreyCombine -pipelineObj (Invoke-GeoffreySource -sourceFiles $path01,$path01) ))
+        Test-Path ($destfile.FullName) | should be $true
+
+        $destFile.Length -gt $path01.Length | should be $true
+        $destFile.Length -gt $path02.Length | should be $true
+    }
+
+    It 'can combine two files with piping'{
+        $relpath01 = 'invoke-geoffreycombine-pipe\temp01.txt'
+        Setup -File -Path $relpath01 -Content $script:tempfilecontent1
+        [System.IO.FileInfo]$path01 = Join-Path $TestDrive $relpath01
+
+        $relpath02 = 'invoke-geoffreycombine-pipe\temp02.txt'
+        Setup -File -Path $relpath02 -Content $script:tempfilecontent1
+        [System.IO.FileInfo]$path02 = Join-Path $TestDrive $relpath02
+
+        [System.IO.FileInfo]$destfile = (Join-Path $TestDrive 'invoke-geoffreycombine-pipe\dest.css')
+        Test-Path ($destfile.FullName) | should not be $true
+
+        # $result = (Invoke-GeoffreyDest -destination $destFile -pipelineObj (Invoke-GeoffreyCombine -pipelineObj (Invoke-GeoffreySource -sourceFiles $path01,$path01) ))
+        $result = Invoke-GeoffreySource -sourceFiles $path01,$path02 | Invoke-GeoffreyCombine | Invoke-GeoffreyDest -destination $destfile
         Test-Path ($destfile.FullName) | should be $true
 
         $destFile.Length -gt $path01.Length | should be $true
@@ -411,18 +431,18 @@ body {
         $path1 = Join-Path $TestDrive $samplecss01path
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyCss)
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.SourceStream | Should not be $null
-        $result.SourcePath | Should not be $null
+        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $mincontent.Contains("`n") | Should be $false
         $minContent.Length -lt $script:samplecss01.Length | Should be $true
 
         # close the streams as well
-        $result.SourceStream.Dispose()
+        $result.StreamObjects[0].SourceStream.Dispose()
         $reader.Dispose()
     }
 
@@ -438,7 +458,7 @@ body {
         $path3 = Join-Path $TestDrive $samplecss03
         $result = (Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3 | Invoke-GeoffreyMinifyCss)
 
-        foreach($alfpipeobj in $result){
+        foreach($alfpipeobj in $result.StreamObjects){
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
             $minContent = $reader.ReadToEnd()
 
@@ -460,18 +480,18 @@ body {
         # CommentMode=1 is CssComments.None
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyCss -settingsJson '{ "CommentMode":  1 }' )
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.SourceStream | Should not be $null
-        $result.SourcePath | Should not be $null
+        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $mincontent.Contains("`n") | Should be $false
         $minContent.Length -lt $script:samplecss04.Length | Should be $true
         $minContent.Contains('/*!') | Should be $false
         # close the streams as well
-        $result.SourceStream.Dispose()
+        $result.StreamObjects[0].SourceStream.Dispose()
         $reader.Dispose()
     }
 
@@ -482,19 +502,19 @@ body {
         # CommentMode=1 is CssComments.None
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyCss -CommentMode 'None' -ColorNames NoSwap )
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.SourceStream | Should not be $null
-        $result.SourcePath | Should not be $null
+        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $mincontent.Contains("`n") | Should be $false
         $minContent.Length -lt $script:samplecss04.Length | Should be $true
         $minContent.Contains('/*!') | Should be $false
         $minContent.ToLower().Contains('antiquewhite') | Should be $true
         # close the streams as well
-        $result.SourceStream.Dispose()
+        $result.StreamObjects[0].SourceStream.Dispose()
         $reader.Dispose()
     }
 }
@@ -590,18 +610,18 @@ document.write('<h3>' + greeting + '</h3>');
         $path1 = Join-Path $TestDrive $samplejs01path
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyJavaScript)
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.SourceStream | Should not be $null
-        $result.SourcePath | Should not be $null
+        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $mincontent.Contains("`n") | Should be $false
         $minContent.Length -lt $script:samplecss01.Length | Should be $true
 
         # close the streams as well
-        $result.SourceStream.Dispose()
+        $result.StreamObjects[0].SourceStream.Dispose()
         $reader.Dispose()
     }
 
@@ -618,17 +638,17 @@ document.write('<h3>' + greeting + '</h3>');
         $result = (Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3 | Invoke-GeoffreyMinifyJavaScript)
 
         foreach($alfpipeobj in $result){
-            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.StreamObjects[0].SourceStream)
             $minContent = $reader.ReadToEnd()
 
             $alfpipeobj | Should not be null
-            $alfpipeobj.SourceStream | Should not be $null
-            $alfpipeobj.SourcePath | Should not be $null
+            $alfpipeobj.StreamObjects[0].SourceStream | Should not be $null
+            $alfpipeobj.StreamObjects[0].SourcePath | Should not be $null
             $minContent | Should not be $null
             $mincontent.Contains("`n") | Should be $false
             # close the streams as well
             $reader.Dispose()
-            $alfpipeobj.SourceStream.Dispose()
+            $alfpipeobj.StreamObjects[0].SourceStream.Dispose()
         }
     }
 
@@ -638,18 +658,18 @@ document.write('<h3>' + greeting + '</h3>');
         $path1 = Join-Path $TestDrive $samplejs01path
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyJavaScript -settingsJson '{ "PreserveImportantComments":false}')
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.SourceStream | Should not be $null
-        $result.SourcePath | Should not be $null
+        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         #$mincontent.Contains("`n") | Should be $false
         $minContent.Length -lt $script:samplejs04.Length | Should be $true
         $minContent.Contains('/*!') | Should be $false
         # close the streams as well
-        $result.SourceStream.Dispose()
+        $result.StreamObjects[0].SourceStream.Dispose()
         $reader.Dispose()
     }
 
@@ -659,17 +679,17 @@ document.write('<h3>' + greeting + '</h3>');
         $path1 = Join-Path $TestDrive $samplejs01path
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyJavaScript -PreserveImportantComments $false )
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.SourceStream | Should not be $null
-        $result.SourcePath | Should not be $null
+        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $minContent.Length -lt $script:samplejs04.Length | Should be $true
         $minContent.Contains('/*!') | Should be $false
         # close the streams as well
-        $result.SourceStream.Dispose()
+        $result.StreamObjects[0].SourceStream.Dispose()
         $reader.Dispose()
     }
 }
@@ -756,18 +776,18 @@ p {
         $path1 = Join-Path $TestDrive $sampleless01path
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyLess)
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
         $compiledContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.SourceStream | Should not be $null
-        $result.SourcePath | Should not be $null
+        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].SourcePath | Should not be $null
         $compiledContent | Should not be $null
         $compiledContent.Contains('@') | Should be $false
         $compiledContent.Length -lt $script:sampleless01.Length | Should be $true
 
         # close the streams as well
-        $result.SourceStream.Dispose()
+        $result.StreamObjects[0].SourceStream.Dispose()
         $reader.Dispose()
     }
 
@@ -785,18 +805,18 @@ p {
         $result = (Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3 | Invoke-GeoffreyLess)
         foreach($alfpipeobj in $result){
             # ensure content is there
-            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.StreamObjects[0].SourceStream)
             $compiledContent = $reader.ReadToEnd()
 
             $alfpipeobj | Should not be null
-            $alfpipeobj.SourceStream | Should not be $null
-            $alfpipeobj.SourcePath | Should not be $null
+            $alfpipeobj.StreamObjects[0].SourceStream | Should not be $null
+            $alfpipeobj.StreamObjects[0].SourcePath | Should not be $null
             $compiledContent | Should not be $null
             $compiledContent.Contains('@') | Should be $false
             $compiledContent.Length -lt $script:sampleless01.Length | Should be $true
 
             # close the streams as well
-            $alfpipeobj.SourceStream.Dispose()
+            $alfpipeobj.StreamObjects[0].SourceStream.Dispose()
             $reader.Dispose()
         }
     }
