@@ -289,6 +289,27 @@ Describe 'Invoke-GeoffreyDest tests'{
     }
 }
 
+Describe 'Invoke-GeoffreyCombine tests'{
+    It 'can combine two files'{
+        $relpath01 = 'invoke-geoffreycombine\temp01.txt'
+        Setup -File -Path $relpath01 -Content $script:tempfilecontent1
+        [System.IO.FileInfo]$path01 = Join-Path $TestDrive $relpath01
+
+        $relpath02 = 'invoke-geoffreycombine\temp02.txt'
+        Setup -File -Path $relpath02 -Content $script:tempfilecontent1
+        [System.IO.FileInfo]$path02 = Join-Path $TestDrive $relpath02
+
+        [System.IO.FileInfo]$destfile = (Join-Path $TestDrive 'invoke-geoffreycombine\dest.css')
+        Test-Path ($destfile.FullName) | should not be $true
+
+        $result = (Invoke-GeoffreyDest -destination $destFile -sourceStreams (Invoke-GeoffreyCombine -sourceStreams (Invoke-GeoffreySource -sourceFiles $path01,$path01) ))
+        Test-Path ($destfile.FullName) | should be $true
+
+        $destFile.Length -gt $path01.Length | should be $true
+        $destFile.Length -gt $path02.Length | should be $true
+    }
+}
+
 Describe 'Invoke-GeoffreyMinifyCss tests'{
     $script:samplecss01 = @'
 html {

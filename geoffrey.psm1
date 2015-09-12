@@ -320,27 +320,54 @@ function InternalGet-GeoffreySourcePipelineObj{
     begin{
         if($sourceStream -ne $null){
             $currentIndex = 0
-            if($sourceStream.Count -ne $sourcePath.Count){
-                throw ('There is a mismatch between the number of source streams [{0}] and source paths [{1}]' -f $sourceStream.Count,$sourcePath.Count)
+
+            $sourceStreamCount = 1
+            $sourcePathCount = 0
+
+            if($sourceStream -is [array]){
+                $sourceStreamCount = $sourceStream.Count
+            }
+            if($sourcePath -ne $null){
+                $sourcePathCount = 1
+                if($sourcePath -is [array]){
+                    $sourcePathCount = $sourcePath.Count
+                }
+            }
+
+            if($sourcePathCount -gt 0 -and ($sourceStreamCount -ne $sourcePathCount)){
+                throw ('There is a mismatch between the number of source streams [{0}] and source paths [{1}]' -f $sourceStreamCount,$sourcePathCount)
             }
         }
     }
     process{
         if($sourceStream -ne $null){
             $currentIndex = 0
-
+            $returnObj = @()
             foreach($source in $sourceStream){
+                [System.IO.FileInfo]$sourcePathValue = $null
+                if($sourcePath -ne $null){
+                    if($sourcePath -is [array]){
+                        $sourcePathValue = $sourcePath[$currentIndex]
+                    }
+                    else{
+                        $sourcePathValue = $sourcePath
+                    }
+                }
+
                 # create an object and return it to the pipeline
                 $sourceObj = New-Object psobject -Property @{
                     SourceStream = $source
-                    SourcePath = ($sourcePath[$currentIndex])
+                    SourcePath = $sourcePathValue
                 }
                 $sourceObj.PSObject.TypeNames.Insert(0,'GeoffreySourcePipeObj')
                 $currentIndex++ | Out-Null
 
                 # return the obj to the pipeline
-                $sourceObj
+                $returnobj += $sourceObj
             }
+
+            # return the results
+            $returnObj
         }
     }
 }
@@ -355,7 +382,8 @@ function Invoke-GeoffreySource{
         [Parameter(Position=0,ValueFromPipeline=$true)]
         [System.IO.FileInfo[]]$sourceFiles
     )
-    process{
+    end{
+        $returnobj = @()
         foreach($file in $sourceFiles){
             $filepath = $file
             if($file -is [System.IO.FileInfo]){
@@ -363,8 +391,11 @@ function Invoke-GeoffreySource{
             }
 
             # read the file and return the stream to the pipeline
-            InternalGet-GeoffreySourcePipelineObj -sourceStream ([System.IO.File]::OpenRead($filepath)) -sourcePath $file
+            $returnobj += (InternalGet-GeoffreySourcePipelineObj -sourceStream ([System.IO.File]::OpenRead($filepath)) -sourcePath $file)
         }
+
+        # return the results
+        $returnobj
     }
 }
 set-alias src Invoke-GeoffreySource
@@ -400,14 +431,14 @@ function Invoke-GeoffreyDest{
         [Parameter(Position=2)]
         [switch]$append
     )
-    process{
-    # todo: if the dest folder doesn't exist then create it
+    end{
         $currentIndex = 0
         $destStreams = @{}
         $strmsToClose = @()
         try{
             $filesWritten = @()
             # see if we are writing to a single file or multiple
+            $returnobj = @()
             foreach($currentStreamPipeObj in $sourceStreams){
                 $currentStream = ($currentStreamPipeObj.SourceStream)
                 $actualDest = $destination[$currentIndex]
@@ -450,21 +481,24 @@ function Invoke-GeoffreyDest{
                     $currentStream.Flush() | Out-Null
 
                     # return the file to the pipeline
-                    Get-Item $actualDest
+                    $returnobj += (Get-Item $actualDest)
                 }
                 catch{
-                    $_ | Write-Error
+                    throw ("An error occured during writing to the destination. Exception: {0}`r`n{1}" -f $_.Exception,(Get-PSCallStack|Out-String))
                 }
                 # if the dest only has one value then don't increment it
                 if($destination.Count -gt 1){
                     $currentIndex++ | Out-Null
                 }
             }
+
+            # return the results
+            $returnobj
         }
         finally{
             foreach($strm in $strmsToClose){
                 try{
-                    $strm.Dispose()
+                    $strm.Dispose() | Out-Null
                 }
                 catch [System.ObjectDisposedException]{
                     # this exception will be thrown if we dispose of a stream more than once.
@@ -476,6 +510,60 @@ function Invoke-GeoffreyDest{
     }
 }
 Set-Alias dest Invoke-GeoffreyDest
+
+function Invoke-GeoffreyCombine{
+    [cmdletbinding()]
+    param(
+        [Parameter(ValueFromPipeline=$true,Position=1)]
+        [object[]]$sourceStreams # type is GeoffreySourcePipeObj
+    )
+    process{}
+    end{
+        $currentIndex = 0
+
+        # setup the destination stream here
+        [System.IO.MemoryStream]$memstream = New-Object -TypeName 'System.IO.MemoryStream'
+        [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $memstream
+
+        $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null
+
+        try{
+            # see if we are writing to a single file or multiple
+            foreach($currentStreamPipeObj in $sourceStreams){
+                $currentStream = ($currentStreamPipeObj.SourceStream)
+                [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
+
+                # todo: buffer this
+                $strContents = $reader.ReadToEnd()
+                $writer.Write($strContents) | Out-Null
+                $writer.Flush() | Out-Null
+                $writer.Write("`r`n") | Out-Null
+                $writer.Flush() | Out-Null
+
+                $currentStream.Flush() | Out-Null
+                $currentStream.Dispose() | Out-Null
+            }
+            $memstream.Position = 0
+
+            # memstream will be closed when the writer is in Dispose() so make a new stream and return that
+            [System.IO.MemoryStream]$streamtoreturn = New-Object -TypeName 'System.IO.MemoryStream'
+            $memstream.CopyTo($streamtoreturn)
+            $streamtoreturn.Flush()
+            $streamtoreturn.Position = 0
+
+            $reader.Dispose()
+            $writer.Dispose()
+
+            # return the combined object here
+            InternalGet-GeoffreySourcePipelineObj -sourceStream $streamtoreturn
+        }
+        catch{
+                throw ("An error occured during writing to the destination. Exception: {0}`r`n{1}" -f $_.Exception,(Get-PSCallStack|Out-String))
+        }
+
+    }
+}
+Set-Alias combine Invoke-GeoffreyCombine
 
 [string]$script:ajaxminpath = $null
 <#
