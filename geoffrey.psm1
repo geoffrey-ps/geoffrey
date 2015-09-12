@@ -311,7 +311,7 @@ function Write-TaskExecutionInfo{
     }
 }
 
-function InternalGet-GeoffreySourcePipelineObj{
+function InternalGet-GeoffreyStreamObject{
     [cmdletbinding()]
     param(
         [System.IO.Stream[]]$sourceStream,
@@ -391,7 +391,7 @@ function Invoke-GeoffreySource{
             }
 
             # read the file and return the stream to the pipeline
-            $returnobj += (InternalGet-GeoffreySourcePipelineObj -sourceStream ([System.IO.File]::OpenRead($filepath)) -sourcePath $file)
+            $returnobj += (InternalGet-GeoffreyStreamObject -sourceStream ([System.IO.File]::OpenRead($filepath)) -sourcePath $file)
         }
 
         # return the results
@@ -555,7 +555,7 @@ function Invoke-GeoffreyCombine{
             $writer.Dispose()
 
             # return the combined object here
-            InternalGet-GeoffreySourcePipelineObj -sourceStream $streamtoreturn
+            InternalGet-GeoffreyStreamObject -sourceStream $streamtoreturn
         }
         catch{
                 throw ("An error occured during writing to the destination. Exception: {0}`r`n{1}" -f $_.Exception,(Get-PSCallStack|Out-String))
@@ -691,7 +691,7 @@ function Invoke-GeoffreyMinifyCss{
             $stringwriter.Flush() | Out-Null
             $memStream.Position = 0
             # return the stream to the pipeline
-            InternalGet-GeoffreySourcePipelineObj -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
+            InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
         }
     }
 }
@@ -847,7 +847,7 @@ function Invoke-GeoffreyMinifyJavaScript{
             $memStream.Position = 0
 
             # return the stream to the pipeline
-            InternalGet-GeoffreySourcePipelineObj -sourceStream $memStream -sourcePath ($jsstreampipeobj.SourcePath)
+            InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($jsstreampipeobj.SourcePath)
         }
     }
 }
@@ -888,7 +888,7 @@ function Invoke-GeoffreyLess{
             $memStream.Position = 0
 
             # return the stream to the pipeline
-            InternalGet-GeoffreySourcePipelineObj -sourceStream $memStream -sourcePath ($lessstreampipeobj.SourcePath)
+            InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($lessstreampipeobj.SourcePath)
         }
     }
 }
