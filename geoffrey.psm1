@@ -1,4 +1,4 @@
-[cmdletbinding()]
+    [cmdletbinding()]
 param()
 
 Set-StrictMode -Version Latest
@@ -380,6 +380,7 @@ function InternalGet-GeoffreyStreamObject{
                     SourceStream = $source
                     SourcePath = $sourcePathValue
                 }
+
                 $sourceObj.PSObject.TypeNames.Insert(0,'GeoffreySourcePipeObj')
                 $currentIndex++ | Out-Null
 
@@ -455,81 +456,78 @@ function Invoke-GeoffreyDest{
     end{
         $currentIndex = 0
         $destStreams = @{}
-        $strmsToClose = @()
-        try{
-            $filesWritten = @()
-            # see if we are writing to a single file or multiple
-            $returnobj = @()
-            $sourceStreams = $pipelineObj.StreamObjects
-            foreach($currentStreamPipeObj in $sourceStreams){
-                $currentStream = ($currentStreamPipeObj.SourceStream)
-                $actualDest = $destination[$currentIndex]
-            
-                # see if it's a directory and if so append the source file to it
-                if(Test-Path $actualDest -PathType Container){
-                    $actualDest = (Join-Path $actualDest ($currentStreamPipeObj.SourcePath.Name))
-                }
+        $returnobj = @()
+        
+        $filesWritten = @()
+        # see if we are writing to a single file or multiple            
+        $sourceStreams = $pipelineObj.StreamObjects
 
-                if($filesWritten -notcontains $actualDest){
-                    # if the file exists delete it first because it's the first write
-                    if(-not $append -and (test-path $actualDest)){
+        foreach($currentStreamPipeObj in $sourceStreams){
+            [System.IO.Stream]$currentStream = ($currentStreamPipeObj.SourceStream)
+            $actualDest = $destination[$currentIndex]
+            
+            # see if it's a directory and if so append the source file to it
+            if(Test-Path $actualDest -PathType Container){
+                $actualDest = (Join-Path $actualDest ($currentStreamPipeObj.SourcePath.Name))
+            }
+
+            if($filesWritten -notcontains $actualDest){
+                # if the file exists delete it first because it's the first write
+                if(-not $append -and (test-path $actualDest)){                        
+                    # in the special case that src and dest are the same, don't delete the file first
+                    [string]$filesource = $currentStreamPipeObj.SourcePath
+                    if([string]::Compare($filesource,$actualDest,$true) -ne 0){
                         Remove-Item $actualDest | Write-Verbose
                     }
-                    $filesWritten += $actualDest
                 }
+                $filesWritten += $actualDest
+            }
 
-                # write the stream to the dest and close the source stream
-                try{
-                    if( ($destStreams[$actualDest]) -eq $null){
-                        $actualDest | Ensure-ParentDirExists
-                        $destStreams[$actualDest] = [System.IO.File]::OpenWrite($actualDest)
-                    }
+            # write the stream to the dest and close the source stream
+            try{                    
+                [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
+                # todo: buffer this
+                $strContents = $reader.ReadToEnd()
+                $reader.Close() | Out-Null
+                $reader.Dispose() | Out-Null
+                $currentStream.Close() | Out-Null
+                $currentStream.Dispose() | Out-Null
 
-                    [ValidateNotNull()]$streamToWrite = $destStreams[$actualDest]
-                    [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
-                    [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $streamToWrite
-                    $strmsToClose += $reader
-                    $strmsToClose += $writer
-
-                    $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null
-
-                    # todo: buffer this
-                    $strContents = $reader.ReadToEnd()
-                    $writer.Write($strContents) | Out-Null
-                    $writer.Flush() | Out-Null
-                    $writer.Write("`r`n") | Out-Null
-                    $writer.Flush() | Out-Null
-
-                    $currentStream.Flush() | Out-Null
-
-                    # return the file to the pipeline
-                    $returnobj += (Get-Item $actualDest)
+                if( (($destStreams[$actualDest]) -eq $null) -or (-not ($destStreams[$actualDest].CanWrite)) ){
+                    $actualDest | Ensure-ParentDirExists
+                    Start-Sleep -Milliseconds 2
+                    $destStreams[$actualDest] = [System.IO.File]::OpenWrite($actualDest)
                 }
-                catch{
-                    throw ("An error occured during writing to the destination. Exception: {0}`r`n{1}" -f $_.Exception,(Get-PSCallStack|Out-String))
-                }
+                [ValidateNotNull()]$streamToWrite = $destStreams[$actualDest]
+                [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $streamToWrite
+
+                $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null                    
+                $writer.Write($strContents) | Out-Null
+                $writer.Flush() | Out-Null
+                $writer.Write("`r`n") | Out-Null
+                $writer.Flush() | Out-Null
+
+                # return the file to the pipeline
+                $returnobj += (Get-Item $actualDest)
+
                 # if the dest only has one value then don't increment it
                 if($destination.Count -gt 1){
                     $currentIndex++ | Out-Null
+                }                
+                else{
+                        
                 }
-            }
 
-            # return the results
-            InternalGet-GeoffreyPipelineObject -streamObjects $returnobj
-
-        }
-        finally{
-            foreach($strm in $strmsToClose){
-                try{
-                    $strm.Dispose() | Out-Null
-                }
-                catch [System.ObjectDisposedException]{
-                    # this exception will be thrown if we dispose of a stream more than once.
-                    # for ex when dest has multiple input files but only one dest,
-                    # so its ok to ignore it
-                }
+                $writer.Close() | Out-Null
+                $writer.Dispose() | Out-Null
             }
+            catch{
+                throw ("An error occured during writing to the destination. Exception: {0}`r`n{1}" -f $_.Exception,(Get-PSCallStack|Out-String))
+            }                
         }
+
+        # return the results
+        InternalGet-GeoffreyPipelineObject -streamObjects $returnobj
     }
 }
 Set-Alias dest Invoke-GeoffreyDest
