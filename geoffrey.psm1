@@ -1,4 +1,4 @@
-    [cmdletbinding()]
+[cmdletbinding()]
 param()
 
 Set-StrictMode -Version Latest
@@ -338,59 +338,90 @@ function InternalGet-GeoffreyStreamObject{
         [System.IO.Stream[]]$sourceStream,
         [System.IO.FileInfo[]]$sourcePath
     )
-    begin{
-        if($sourceStream -ne $null){
-            $currentIndex = 0
+    end{
+        $sourceStreamCount = 0
+        $sourcePathCount = 0
 
-            $sourceStreamCount = 1
-            $sourcePathCount = 0
-
-            if($sourceStream -is [array]){
-                $sourceStreamCount = $sourceStream.Count
-            }
-            if($sourcePath -ne $null){
-                $sourcePathCount = 1
-                if($sourcePath -is [array]){
-                    $sourcePathCount = $sourcePath.Count
-                }
-            }
-
-            if($sourcePathCount -gt 0 -and ($sourceStreamCount -ne $sourcePathCount)){
-                throw ('There is a mismatch between the number of source streams [{0}] and source paths [{1}]' -f $sourceStreamCount,$sourcePathCount)
+        if($sourceStream -is [array]){
+            $sourceStreamCount = 1 
+            $sourceStreamCount = $sourceStream.Count
+        }
+        if($sourcePath -ne $null){
+            $sourcePathCount = 1
+            if($sourcePath -is [array]){
+                $sourcePathCount = $sourcePath.Count
             }
         }
-    }
-    process{
-        if($sourceStream -ne $null){
-            $currentIndex = 0
-            $returnObj = @()
-            foreach($source in $sourceStream){
-                [System.IO.FileInfo]$sourcePathValue = $null
-                if($sourcePath -ne $null){
-                    if($sourcePath -is [array]){
-                        $sourcePathValue = $sourcePath[$currentIndex]
-                    }
-                    else{
-                        $sourcePathValue = $sourcePath
-                    }
-                }
+        
+        $returnObj = @()
 
-                # create an object and return it to the pipeline
+        if($sourceStreamCount -eq 1 -and $sourcePathCount -le 0){
+            # we just have one stream passed in
+            if($sourceStream -is [array]){
                 $sourceObj = New-Object psobject -Property @{
-                    SourceStream = $source
-                    SourcePath = $sourcePathValue
+                    SourcePath = [System.IO.FileInfo]$null
+                    _ReadStream = [System.IO.Stream]($sourceStream[0])
                 }
-
-                $sourceObj.PSObject.TypeNames.Insert(0,'GeoffreySourcePipeObj')
-                $currentIndex++ | Out-Null
-
-                # return the obj to the pipeline
                 $returnobj += $sourceObj
             }
-
-            # return the results
-            $returnObj
+            else{
+                $sourceObj = New-Object psobject -Property @{
+                    SourcePath = [System.IO.FileInfo]$null
+                    _ReadStream = [System.IO.Stream]($sourceStream)
+                }
+                $returnobj += $sourceObj
+            }
         }
+        elseif($sourcePathCount -eq 1 -and $sourceStreamCount -le 0){
+            # we just have one file name passed in
+            if($sourcePath -is [array]){
+                $sourceObj = New-Object psobject -Property @{
+                    SourcePath = [System.IO.FileInfo]($sourcePath[0])
+                    _ReadStream = [System.IO.Stream]$null
+                }
+                $returnobj += $sourceObj
+            }
+            else{
+                $sourceObj = New-Object psobject -Property @{
+                    SourcePath = [System.IO.FileInfo]($sourcePath)
+                    _ReadStream = [System.IO.Stream]$null
+                }
+                $returnobj += $sourceObj
+            }
+        }
+        elseif($sourceStreamCount -gt 0 -and ($sourceStreamCount -eq $sourcePathCount)){
+            $currentIndex = 0
+            for($currentIndex = 0; $currentIndex -lt $sourceStreamCount;$currentIndex++){
+                $sourceObj = New-Object psobject -Property @{
+                    SourcePath = [System.IO.FileInfo]($sourcePath[$currentIndex])
+                    _ReadStream = [System.IO.Stream]($sourceStream[$currentIndex])
+                }
+                $returnobj += $sourceObj
+            }
+        }
+        else{
+            throw ('There is a mismatch between the number of source streams [{0}] and source paths [{1}]' -f $sourceStreamCount,$sourcePathCount)
+        }
+
+        # add the GetReadStreamMethod
+        foreach($sobj in $returnObj){
+            $sobj | Add-Member -MemberType ScriptMethod -Name GetReadStream -Value {
+                if($this._ReadStream -eq $null){
+                    if(-not ([string]::IsNullOrWhiteSpace($this.SourcePath))){
+                        $this._ReadStream = [System.IO.File]::OpenRead($this.SourcePath)
+                    }
+                    else{
+                        throw ('Unable to open stream because [SourcePath] is empty')
+                    }
+                }
+
+                # return the stream now
+                $this._ReadStream
+            }
+        }
+
+        # return the results
+        $returnObj
     }
 }
 
@@ -413,7 +444,7 @@ function Invoke-GeoffreySource{
             }
 
             # read the file and return the stream to the pipeline
-            $returnobj += (InternalGet-GeoffreyStreamObject -sourceStream ([System.IO.File]::OpenRead($filepath)) -sourcePath $file)
+            $returnobj += (InternalGet-GeoffreyStreamObject -sourcePath $file)
         }
 
         # return the results
@@ -463,7 +494,7 @@ function Invoke-GeoffreyDest{
         $sourceStreams = $pipelineObj.StreamObjects
 
         foreach($currentStreamPipeObj in $sourceStreams){
-            [System.IO.Stream]$currentStream = ($currentStreamPipeObj.SourceStream)
+            [System.IO.Stream]$currentStream = ($currentStreamPipeObj.GetReadStream())
             $actualDest = $destination[$currentIndex]
             
             # see if it's a directory and if so append the source file to it
@@ -514,10 +545,7 @@ function Invoke-GeoffreyDest{
                 if($destination.Count -gt 1){
                     $currentIndex++ | Out-Null
                 }                
-                else{
-                        
-                }
-
+                
                 $writer.Close() | Out-Null
                 $writer.Dispose() | Out-Null
             }
@@ -552,7 +580,7 @@ function Invoke-GeoffreyCombine{
             # see if we are writing to a single file or multiple
             $sourceStreams = $pipelineObj.StreamObjects
             foreach($currentStreamPipeObj in $sourceStreams){
-                $currentStream = ($currentStreamPipeObj.SourceStream)
+                $currentStream = ($currentStreamPipeObj.GetReadStream())
                 [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
 
                 # todo: buffer this
@@ -700,7 +728,7 @@ function Invoke-GeoffreyMinifyCss{
         $sourceStreams = $pipelineObj.StreamObjects
         $streamObjects = @()
         foreach($cssstreampipeobj in $sourceStreams){
-            $cssstream = ($cssstreampipeobj.SourceStream)
+            $cssstream = ($cssstreampipeobj.GetReadStream())
             # minify the stream and return
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $cssstream
             $source = $reader.ReadToEnd()
@@ -862,7 +890,7 @@ function Invoke-GeoffreyMinifyJavaScript{
         $sourceStreams = $pipelineObj.StreamObjects
         $streamObjects = @()
         foreach($jsstreampipeobj in $sourceStreams){
-            $jsstream = ($jsstreampipeobj.SourceStream)
+            $jsstream = ($jsstreampipeobj.GetReadStream())
             # minify the stream and return
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $jsstream
             $source = $reader.ReadToEnd()
@@ -908,7 +936,7 @@ function Invoke-GeoffreyLess{
         $sourceStreams = $pipelineObj.StreamObjects
         $streamObjects = @()
         foreach($lessstreampipeobj in $sourceStreams){
-            $lessstream = ($lessstreampipeobj.SourceStream)
+            $lessstream = ($lessstreampipeobj.GetReadStream())
             # read the file and compile it
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $lessstream
             $source = $reader.ReadToEnd()

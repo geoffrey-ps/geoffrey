@@ -185,9 +185,8 @@ Describe 'Invoke-GeoffreySource tests'{
         $path1 = (Join-Path $TestDrive $script:tempfilepath1)
         $result = Invoke-GeoffreySource -sourceFiles $path1
         $result | Should not be $null
-        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0] | Should not be $null
         $result.StreamObjects[0].SourcePath | Should be $path1
-        $result.StreamObjects[0].SourceStream.Dispose()
     }
 
     It 'given more than one file returns the streams stream'{
@@ -201,16 +200,8 @@ Describe 'Invoke-GeoffreySource tests'{
 
         $result = Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3
         $result | Should not be $null
-        $result  | % {$_.StreamObjects[0].SourceStream | Should not be $null}
+        $result  | % {$_.StreamObjects[0] | Should not be $null}
         $result.StreamObjects[0].SourcePath | Should be $path1,$path2,$path3
-        $result | % {$_.StreamObjects[0].SourceStream.Dispose()}
-
-        # TODO: will need to be removed when streams are not proactively opened
-        foreach($sobj in $result.StreamObjects){
-            $sobj.SourceStream.Close()
-            $sobj.SourceStream.Dispose()
-        }
-
     }
 }
 
@@ -449,18 +440,18 @@ body {
         $path1 = (Join-Path $TestDrive $samplecss01path)
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyCss)
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].GetReadStream())
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].GetReadStream() | Should not be $null
         $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $mincontent.Contains("`n") | Should be $false
         $minContent.Length -lt $script:samplecss01.Length | Should be $true
 
         # close the streams as well
-        $result.StreamObjects[0].SourceStream.Dispose()
+        $result.StreamObjects[0].GetReadStream().Dispose()
         $reader.Dispose()
     }
 
@@ -477,17 +468,17 @@ body {
         $result = (Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3 | Invoke-GeoffreyMinifyCss)
 
         foreach($alfpipeobj in $result.StreamObjects){
-            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.SourceStream)
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.GetReadStream())
             $minContent = $reader.ReadToEnd()
 
             $alfpipeobj | Should not be null
-            $alfpipeobj.SourceStream | Should not be $null
+            $alfpipeobj.GetReadStream() | Should not be $null
             $alfpipeobj.SourcePath | Should not be $null
             $minContent | Should not be $null
             $mincontent.Contains("`n") | Should be $false
             # close the streams as well
             $reader.Dispose()
-            $alfpipeobj.SourceStream.Dispose()
+            $alfpipeobj.GetReadStream().Dispose()
         }
     }
 
@@ -498,18 +489,18 @@ body {
         # CommentMode=1 is CssComments.None
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyCss -settingsJson '{ "CommentMode":  1 }' )
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].GetReadStream())
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].GetReadStream() | Should not be $null
         $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $mincontent.Contains("`n") | Should be $false
         $minContent.Length -lt $script:samplecss04.Length | Should be $true
         $minContent.Contains('/*!') | Should be $false
         # close the streams as well
-        $result.StreamObjects[0].SourceStream.Dispose()
+        $result.StreamObjects[0].GetReadStream().Dispose()
         $reader.Dispose()
     }
 
@@ -520,11 +511,11 @@ body {
         # CommentMode=1 is CssComments.None
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyCss -CommentMode 'None' -ColorNames NoSwap )
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].GetReadStream())
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].GetReadStream() | Should not be $null
         $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $mincontent.Contains("`n") | Should be $false
@@ -532,7 +523,7 @@ body {
         $minContent.Contains('/*!') | Should be $false
         $minContent.ToLower().Contains('antiquewhite') | Should be $true
         # close the streams as well
-        $result.StreamObjects[0].SourceStream.Dispose()
+        $result.StreamObjects[0].GetReadStream().Dispose()
         $reader.Dispose()
     }
 }
@@ -628,18 +619,18 @@ document.write('<h3>' + greeting + '</h3>');
         $path1 = (Join-Path $TestDrive $samplejs01path)
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyJavaScript)
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].GetReadStream())
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].GetReadStream() | Should not be $null
         $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $mincontent.Contains("`n") | Should be $false
         $minContent.Length -lt $script:samplecss01.Length | Should be $true
 
         # close the streams as well
-        $result.StreamObjects[0].SourceStream.Dispose()
+        $result.StreamObjects[0].GetReadStream().Dispose()
         $reader.Dispose()
     }
 
@@ -656,17 +647,17 @@ document.write('<h3>' + greeting + '</h3>');
         $result = (Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3 | Invoke-GeoffreyMinifyJavaScript)
 
         foreach($alfpipeobj in $result){
-            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.StreamObjects[0].SourceStream)
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.StreamObjects[0].GetReadStream())
             $minContent = $reader.ReadToEnd()
 
             $alfpipeobj | Should not be null
-            $alfpipeobj.StreamObjects[0].SourceStream | Should not be $null
+            $alfpipeobj.StreamObjects[0].GetReadStream() | Should not be $null
             $alfpipeobj.StreamObjects[0].SourcePath | Should not be $null
             $minContent | Should not be $null
             $mincontent.Contains("`n") | Should be $false
             # close the streams as well
             $reader.Dispose()
-            $alfpipeobj.StreamObjects[0].SourceStream.Dispose()
+            $alfpipeobj.StreamObjects[0].GetReadStream().Dispose()
         }
     }
 
@@ -676,18 +667,18 @@ document.write('<h3>' + greeting + '</h3>');
         $path1 = (Join-Path $TestDrive $samplejs01path)
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyJavaScript -settingsJson '{ "PreserveImportantComments":false}')
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].GetReadStream())
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].GetReadStream() | Should not be $null
         $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         #$mincontent.Contains("`n") | Should be $false
         $minContent.Length -lt $script:samplejs04.Length | Should be $true
         $minContent.Contains('/*!') | Should be $false
         # close the streams as well
-        $result.StreamObjects[0].SourceStream.Dispose()
+        $result.StreamObjects[0].GetReadStream().Dispose()
         $reader.Dispose()
     }
 
@@ -697,17 +688,17 @@ document.write('<h3>' + greeting + '</h3>');
         $path1 = (Join-Path $TestDrive $samplejs01path)
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyMinifyJavaScript -PreserveImportantComments $false )
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].GetReadStream())
         $minContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].GetReadStream() | Should not be $null
         $result.StreamObjects[0].SourcePath | Should not be $null
         $minContent | Should not be $null
         $minContent.Length -lt $script:samplejs04.Length | Should be $true
         $minContent.Contains('/*!') | Should be $false
         # close the streams as well
-        $result.StreamObjects[0].SourceStream.Dispose()
+        $result.StreamObjects[0].GetReadStream().Dispose()
         $reader.Dispose()
     }
 }
@@ -794,18 +785,18 @@ p {
         $path1 = (Join-Path $TestDrive $sampleless01path)
         $result = (Invoke-GeoffreySource -sourceFiles $path1 | Invoke-GeoffreyLess)
         # ensure content is there
-        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].SourceStream)
+        [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($result.StreamObjects[0].GetReadStream())
         $compiledContent = $reader.ReadToEnd()
 
         $result | Should not be null
-        $result.StreamObjects[0].SourceStream | Should not be $null
+        $result.StreamObjects[0].GetReadStream() | Should not be $null
         $result.StreamObjects[0].SourcePath | Should not be $null
         $compiledContent | Should not be $null
         $compiledContent.Contains('@') | Should be $false
         $compiledContent.Length -lt $script:sampleless01.Length | Should be $true
 
         # close the streams as well
-        $result.StreamObjects[0].SourceStream.Dispose()
+        $result.StreamObjects[0].GetReadStream().Dispose()
         $reader.Dispose()
     }
 
@@ -823,22 +814,21 @@ p {
         $result = (Invoke-GeoffreySource -sourceFiles $path1,$path2,$path3 | Invoke-GeoffreyLess)
         foreach($alfpipeobj in $result){
             # ensure content is there
-            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.StreamObjects[0].SourceStream)
+            [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList ($alfpipeobj.StreamObjects[0].GetReadStream())
             $compiledContent = $reader.ReadToEnd()
 
             $alfpipeobj | Should not be null
-            $alfpipeobj.StreamObjects[0].SourceStream | Should not be $null
+            $alfpipeobj.StreamObjects[0].GetReadStream() | Should not be $null
             $alfpipeobj.StreamObjects[0].SourcePath | Should not be $null
             $compiledContent | Should not be $null
             $compiledContent.Contains('@') | Should be $false
             $compiledContent.Length -lt $script:sampleless01.Length | Should be $true
 
             # close the streams as well
-            $alfpipeobj.StreamObjects[0].SourceStream.Dispose()
+            $alfpipeobj.StreamObjects[0].GetReadStream().Dispose()
             $reader.Dispose()
         }
     }
-
 }
 
 Describe 'Invoke-Geoffrey tests'{
