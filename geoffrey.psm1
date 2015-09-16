@@ -13,6 +13,7 @@ $global:geoffreysettings = new-object psobject -Property @{
     PrintTaskExecutionTimes = $true
     GeoffreyPrintTasknameColor = 'Yellow'
     GeoffreyPrintTaskTimeColor = 'Green'
+    EnableRequiresViaUrl = $true
 }
 
 [bool]$watcherLoaded = $false
@@ -96,14 +97,79 @@ function Ensure-NuGetPowerShellIsLoaded{
 }
 
 function Invoke-GeoffreyRequires{
-    [cmdletbinding()]
+    [cmdletbinding(DefaultParameterSetName='nameorurl')]
     param(
-        [string[]]$moduleName
+        [Parameter(Position=0,ParameterSetName='nameorurl')]
+        [string]$nameorurl,
+
+        [Parameter(Position=0,ParameterSetName='nameversion',Mandatory=$true)]
+        [string]$name,
+
+        [Parameter(Position=1,ParameterSetName='nameversion')]
+        [string]$version,
+
+        [Parameter(Position=2,ParameterSetName='nameversion')]
+        [switch]$prerelease,
+
+        [Parameter(Position=0,ParameterSetName='url')]
+        $url
     )
+    begin{
+        # make sure nuget-powershell is loaded and ready to be called
+        Ensure-NuGetPowerShellIsLoaded
+    }
     process{
         if($global:geoffreycontext.RunTasks){
-            foreach($itemName in $moduleName){
-                'Downloading and importing {0}' -f $itemName | Write-Host
+            if($PSBoundParameters.ContainsKey('nameorurl')){
+                # see if the value is a url or the name of a nuget package
+                [System.Uri]$uriresult = $null
+                [Uri]::TryCreate($nameorurl,[UriKind]::Absolute,[ref] $uriresult)
+                if($uriresult -ne $null){
+                    $url = $nameorurl
+                }
+            }
+
+            # if $url is empty then its a nuget package
+            if([string]::IsNullOrWhiteSpace($url)){
+                # add required params here
+                $getnugetparams = @{
+                    'name'=$name
+                    'binpath'=$true
+                }
+
+                if($PSBoundParameters.ContainsKey('version')){
+                    $getnugetparams.Add('version',$version)
+                }
+                if($PSBoundParameters.ContainsKey('prerelease')){
+                    $getnugetparams.Add('prerelease',$true)
+                }
+
+                $pkgpath = Get-NuGetPackage @getnugetparams
+                # load the module inside the package
+            }
+            else{
+                # invoke with iex
+                if( ($global:geoffreysettings.EnableRequiresViaUrl) -eq $true){
+                    # before executing convert to uri and then get absolut uri from that to make sure
+                    # that users have not injected any PS into the requires string
+                    [System.Uri]$uriresult = $null
+                    [Uri]::TryCreate($url,[UriKind]::Absolute,[ref] $uriresult)
+                    if($uriresult -ne $null){
+                        try{
+                            'Executing [{0}] from requires' -f ($uriresult.AbsoluteUri) |Write-Verbose
+                            (new-object Net.WebClient).DownloadString(($uriresult.AbsoluteUri)) | iex
+                        }
+                        catch{
+                            throw ("An error occured while executing [{0}] from requires. Exception: [{1}].`r`n{2}" -f ($uriresult.AbsoluteUri),($_.Exception),(Get-PSCallStack))
+                        }
+                    }
+                    else{
+                        throw ('Unable to parse the provided url [{0}]' -f $url)
+                    }
+                }
+                else{
+                    'Skipping [requires {0}] because [$global:geoffreysettings.EnableRequiresViaUrl] is false' -f $url | Write-Warning
+                }
             }
         }
         else{
