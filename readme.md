@@ -1,6 +1,6 @@
 # geoffrey - the PowerShell task runner for web
 
-![geoffrey logo](resources/geoffrey-face.png)
+![geoffrey logo](geoffrey-face.png)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/cit12s48enphxi3b?svg=true)](https://ci.appveyor.com/project/sayedihashimi/geoffrey)
 

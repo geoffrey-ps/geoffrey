@@ -7,7 +7,12 @@ param(
 $installFolder = (Join-Path $toolsDir 'geoffrey-pre')
 $installPath = (Join-Path $installFolder 'geoffrey.psm1')
 
-function EnsureNuGetPowerShellInstlled{
+if(Get-Module geoffrey){
+    'Removing geoffrey module' | Write-Verbose
+    Remove-Module geoffrey -force
+}
+
+function EnsureNuGetPowerShellInstlled2{
     [cmdletbinding()]
     param(
         [string]$installUri = 'https://raw.githubusercontent.com/ligershark/nuget-powershell/master/get-nugetps.ps1'
@@ -28,7 +33,7 @@ function EnsureNuGetPowerShellInstlled{
     }
 }
 
-function GetPsModulesPath{
+function GetPsModulesPath2{
     [cmdletbinding()]
     param()
     process{
@@ -49,18 +54,12 @@ function GetPsModulesPath{
 # install script
 
 try{
-    EnsureNuGetPowerShellInstlled
+    EnsureNuGetPowerShellInstlled2
     # get the module locally
-    $installpath = (Get-NuGetPackage -name geoffrey -version 0.0.3-beta -binpath)
-
-    # if the module is imported then remove it
-    if(Get-Module geoffrey){
-        'Removing geoffrey module' | Write-Verbose
-        Remove-Module geoffrey -force
-    }
+    $installpath = (Get-NuGetPackage -name geoffrey -version 0.0.4-beta -binpath)
 
     # copy the files to the powershell modules folder
-    $destFolderPath = (Join-Path (GetPsModulesPath) 'geoffrey')
+    $destFolderPath = (Join-Path (GetPsModulesPath2) 'geoffrey')
     if(-not (Test-Path $destFolderPath)){
         'Creating modules folder at [{0}]' -f $destFolderPath | Write-Verbose
         New-Item -Path $destFolderPath -ItemType Directory

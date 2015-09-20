@@ -7,7 +7,7 @@ environment:
 configuration: Release
 
 before_build:
-- nuget restore src\Geoffrey.sln
+- nuget restore projects\Geoffrey.sln
 
 build_script:
   - ps: .\appveyor.ps1

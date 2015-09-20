@@ -136,7 +136,7 @@ function Build-Projects{
         $env:IsDeveloperMachine=$true
         if($outputPath -eq $null){throw 'outputpath is null'}
 
-        $projectToBuild = Join-Path $scriptDir 'src\Geoffrey.sln'
+        $projectToBuild = Join-Path $scriptDir 'projects\Geoffrey.sln'
 
         if(-not (Test-Path $projectToBuild)){
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)
@@ -199,7 +199,7 @@ function Clean{
     [cmdletbinding()]
     param()
     process {
-        [System.IO.FileInfo]$projectToBuild = Join-Path $scriptDir 'src\Geoffrey.sln'
+        [System.IO.FileInfo]$projectToBuild = Join-Path $scriptDir 'projects\Geoffrey.sln'
 
         if(-not (Test-Path $projectToBuild)){
             throw ('Could not find the project to build at [{0}]' -f $projectToBuild)

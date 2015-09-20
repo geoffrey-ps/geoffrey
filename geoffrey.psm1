@@ -13,6 +13,7 @@ $global:geoffreysettings = new-object psobject -Property @{
     PrintTaskExecutionTimes = $true
     GeoffreyPrintTasknameColor = 'Yellow'
     GeoffreyPrintTaskTimeColor = 'Green'
+    EnableRequiresViaUrl = $true
 }
 
 [bool]$watcherLoaded = $false
@@ -98,12 +99,82 @@ function Ensure-NuGetPowerShellIsLoaded{
 function Invoke-GeoffreyRequires{
     [cmdletbinding()]
     param(
-        [string[]]$moduleName
+        [Parameter(Position=0,Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$nameorurl,
+
+        [Parameter(Position=1)]
+        [bool]$condition = $true,
+
+        [Parameter(Position=2)]
+        [string]$version,
+
+        [Parameter(Position=3)]
+        [switch]$prerelease
     )
+    begin{
+        # make sure nuget-powershell is loaded and ready to be called
+        Ensure-NuGetPowerShellIsLoaded
+    }
     process{
         if($global:geoffreycontext.RunTasks){
-            foreach($itemName in $moduleName){
-                'Downloading and importing {0}' -f $itemName | Write-Host
+            [string]$url = $null
+            if($PSBoundParameters.ContainsKey('nameorurl')){
+                # see if the value is a url or the name of a nuget package
+                [System.Uri]$uriresult = $null
+                [Uri]::TryCreate($nameorurl,[UriKind]::Absolute,[ref] $uriresult)
+                if($uriresult -ne $null){
+                    $url = $nameorurl
+                }
+            }
+
+            # if $url is empty then its a nuget package
+            if([string]::IsNullOrWhiteSpace($url)){
+                # add required params here
+                $getnugetparams = @{
+                    'name'=$nameorurl
+                    'binpath'=$true
+                }
+
+                if($PSBoundParameters.ContainsKey('version')){
+                    $getnugetparams.Add('version',$version)
+                }
+                if($PSBoundParameters.ContainsKey('prerelease')){
+                    $getnugetparams.Add('prerelease',1)
+                }
+
+                $pkgpath = Get-NuGetPackage @getnugetparams
+                # load the module inside the packages
+                InternalImport-ModuleFromFolder -path $pkgpath
+            }
+            else{
+                # invoke with iex
+                if( ($global:geoffreysettings.EnableRequiresViaUrl) -eq $true){
+                    if($condition -eq $true){
+                    # before executing convert to uri and then get absolut uri from that to make sure
+                    # that users have not injected any PS into the requires string
+                    [System.Uri]$uriresult = $null
+                    [Uri]::TryCreate($url,[UriKind]::Absolute,[ref] $uriresult)
+                    if($uriresult -ne $null){
+                        try{
+                            'Executing [{0}] from requires' -f ($uriresult.AbsoluteUri) |Write-Verbose
+                            (new-object Net.WebClient).DownloadString(($uriresult.AbsoluteUri)) | iex
+                        }
+                        catch{
+                            throw ("An error occured while executing [{0}] from requires. Exception: [{1}].`r`n{2}" -f ($uriresult.AbsoluteUri),($_.Exception),(Get-PSCallStack))
+                        }
+                    }
+                    else{
+                        throw ('Unable to parse the provided url [{0}]' -f $url)
+                    }
+                    }
+                    else{
+                        'Skipping [requires {0}] because the condition evaluated to false' -f $url | Write-Verbose
+                    }
+                }
+                else{
+                    'Skipping [requires {0}] because [$global:geoffreysettings.EnableRequiresViaUrl] is false' -f $url | Write-Warning
+                }
             }
         }
         else{
@@ -112,6 +183,56 @@ function Invoke-GeoffreyRequires{
     }
 }
 Set-Alias requires Invoke-GeoffreyRequires
+
+<#
+.SYNOPSIS
+    This will load the module from the folder specified.
+    Order to search:
+     1. tools\g.install.ps1
+     2. tools\*.psd1 - if any file matches *.psd1 then all *.psm1 files are ignored
+     3. tools\*.psm1
+#>
+function InternalImport-ModuleFromFolder{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipeline=$true)]
+        [System.IO.DirectoryInfo[]]$path
+    )
+    process{
+        foreach($p in $path){
+            try{
+                [System.IO.DirectoryInfo]$tools = (Join-Path $p 'tools')
+                [System.IO.FileInfo]$installFile = (Join-Path $tools 'g.install.ps1')
+                [System.IO.FileInfo[]]$psd1Files = (Get-ChildItem $tools *.psd1)
+                [System.IO.FileInfo[]]$psm1Files = (Get-ChildItem $tools *.psm1)
+
+                if(Test-Path $installFile){
+                    # install file found, execute it
+                    'Executing install file at [{0}]' -f ($installFile.FullName) | Write-Verbose
+                    . ($installFile.FullName)
+                }
+                elseif($psd1Files.Length -gt 0){
+                    foreach($psd1 in $psd1Files){
+                        'Importing module at [{0}]' -f ($psd1.FullName) | Write-Verbose
+                        Import-Module ($psd1.FullName) -Global -DisableNameChecking | Write-Verbose
+                    }
+                }
+                elseif($psm1Files.Length -gt 0){
+                    foreach($psm1 in $psm1Files){
+                        'Importing module at [{0}]' -f ($psm1.FullName) | Write-Verbose
+                        Import-Module ($psm1.FullName) -Global -DisableNameChecking | Write-Verbose
+                    }
+                }
+                else{
+                    'No modules found in [{0}] to import' -f ($p.FullName) | Write-Warning
+                }
+            }
+            catch{
+                "An error occured while loading modules in folder [{0}].`r`nException [{1}].`r`n{2}" -f $p, ($_.Exception),(Get-PSCallStack) | Write-Warning
+            }
+        }
+    }
+}
 
 <#
 .SYNOPSIS
@@ -311,37 +432,117 @@ function Write-TaskExecutionInfo{
     }
 }
 
-function InternalGet-GeoffreySourcePipelineObj{
+function InternalGet-GeoffreyPipelineObject{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipeline=$true)]
+        [object[]]$streamObjects
+    )
+    end{
+        if($streamObjects -ne $null){
+            $pipelineObj = New-Object -TypeName psobject -Property @{
+                StreamObjects = @()
+            }
+            foreach($streamobj in $streamObjects){
+                $pipelineObj.StreamObjects += $streamobj
+            }
+
+            # return the result
+            $pipelineObj
+        }
+    }
+}
+
+function InternalGet-GeoffreyStreamObject{
     [cmdletbinding()]
     param(
         [System.IO.Stream[]]$sourceStream,
         [System.IO.FileInfo[]]$sourcePath
     )
-    begin{
-        if($sourceStream -ne $null){
-            $currentIndex = 0
-            if($sourceStream.Count -ne $sourcePath.Count){
-                throw ('There is a mismatch between the number of source streams [{0}] and source paths [{1}]' -f $sourceStream.Count,$sourcePath.Count)
+    end{
+        $sourceStreamCount = 0
+        $sourcePathCount = 0
+
+        if($sourceStream -is [array]){
+            $sourceStreamCount = 1 
+            $sourceStreamCount = $sourceStream.Count
+        }
+        if($sourcePath -ne $null){
+            $sourcePathCount = 1
+            if($sourcePath -is [array]){
+                $sourcePathCount = $sourcePath.Count
             }
         }
-    }
-    process{
-        if($sourceStream -ne $null){
-            $currentIndex = 0
+        
+        $returnObj = @()
 
-            foreach($source in $sourceStream){
-                # create an object and return it to the pipeline
+        if($sourceStreamCount -eq 1 -and $sourcePathCount -le 0){
+            # we just have one stream passed in
+            if($sourceStream -is [array]){
                 $sourceObj = New-Object psobject -Property @{
-                    SourceStream = $source
-                    SourcePath = ($sourcePath[$currentIndex])
+                    SourcePath = [System.IO.FileInfo]$null
+                    _ReadStream = [System.IO.Stream]($sourceStream[0])
                 }
-                $sourceObj.PSObject.TypeNames.Insert(0,'GeoffreySourcePipeObj')
-                $currentIndex++ | Out-Null
-
-                # return the obj to the pipeline
-                $sourceObj
+                $returnobj += $sourceObj
+            }
+            else{
+                $sourceObj = New-Object psobject -Property @{
+                    SourcePath = [System.IO.FileInfo]$null
+                    _ReadStream = [System.IO.Stream]($sourceStream)
+                }
+                $returnobj += $sourceObj
             }
         }
+        elseif($sourcePathCount -eq 1 -and $sourceStreamCount -le 0){
+            # we just have one file name passed in
+            if($sourcePath -is [array]){
+                $sourceObj = New-Object psobject -Property @{
+                    SourcePath = [System.IO.FileInfo]($sourcePath[0])
+                    _ReadStream = [System.IO.Stream]$null
+                }
+                $returnobj += $sourceObj
+            }
+            else{
+                $sourceObj = New-Object psobject -Property @{
+                    SourcePath = [System.IO.FileInfo]($sourcePath)
+                    _ReadStream = [System.IO.Stream]$null
+                }
+                $returnobj += $sourceObj
+            }
+        }
+        elseif($sourceStreamCount -gt 0 -and ($sourceStreamCount -eq $sourcePathCount)){
+            $currentIndex = 0
+            for($currentIndex = 0; $currentIndex -lt $sourceStreamCount;$currentIndex++){
+                $sourceObj = New-Object psobject -Property @{
+                    SourcePath = [System.IO.FileInfo]($sourcePath[$currentIndex])
+                    _ReadStream = [System.IO.Stream]($sourceStream[$currentIndex])
+                }
+                $returnobj += $sourceObj
+            }
+        }
+        else{
+            throw ('There is a mismatch between the number of source streams [{0}] and source paths [{1}]' -f $sourceStreamCount,$sourcePathCount)
+        }
+
+        # add the GetReadStreamMethod
+        foreach($sobj in $returnObj){
+            $sobj | Add-Member -MemberType ScriptMethod -Name GetReadStream -Value {
+                if($this._ReadStream -eq $null){
+                    if(-not ([string]::IsNullOrWhiteSpace($this.SourcePath))){
+                        $this._ReadStream = [System.IO.File]::OpenRead($this.SourcePath)
+                    }
+                    else{
+                        throw ('Unable to open stream because [SourcePath] is empty')
+                    }
+                }
+
+                # return the stream now
+                $this._ReadStream
+            }
+        }
+
+        # return the results
+        $returnObj
     }
 }
 
@@ -355,7 +556,8 @@ function Invoke-GeoffreySource{
         [Parameter(Position=0,ValueFromPipeline=$true)]
         [System.IO.FileInfo[]]$sourceFiles
     )
-    process{
+    end{
+        $returnobj = @()
         foreach($file in $sourceFiles){
             $filepath = $file
             if($file -is [System.IO.FileInfo]){
@@ -363,8 +565,11 @@ function Invoke-GeoffreySource{
             }
 
             # read the file and return the stream to the pipeline
-            InternalGet-GeoffreySourcePipelineObj -sourceStream ([System.IO.File]::OpenRead($filepath)) -sourcePath $file
+            $returnobj += (InternalGet-GeoffreyStreamObject -sourcePath $file)
         }
+
+        # return the results
+        InternalGet-GeoffreyPipelineObject -streamObjects $returnobj
     }
 }
 set-alias src Invoke-GeoffreySource
@@ -392,7 +597,7 @@ function Invoke-GeoffreyDest{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true,Position=1)]
-        [object[]]$sourceStreams, # type is GeoffreySourcePipeObj
+        [object]$pipelineObj, # type is GeoffreyPipelineObject
 
         [Parameter(Position=0)]
         [string[]]$destination,
@@ -400,82 +605,136 @@ function Invoke-GeoffreyDest{
         [Parameter(Position=2)]
         [switch]$append
     )
-    process{
-    # todo: if the dest folder doesn't exist then create it
+    end{
         $currentIndex = 0
         $destStreams = @{}
-        $strmsToClose = @()
-        try{
-            $filesWritten = @()
-            # see if we are writing to a single file or multiple
-            foreach($currentStreamPipeObj in $sourceStreams){
-                $currentStream = ($currentStreamPipeObj.SourceStream)
-                $actualDest = $destination[$currentIndex]
-            
-                # see if it's a directory and if so append the source file to it
-                if(Test-Path $actualDest -PathType Container){
-                    $actualDest = (Join-Path $actualDest ($currentStreamPipeObj.SourcePath.Name))
-                }
+        $returnobj = @()
+        
+        $filesWritten = @()
+        # see if we are writing to a single file or multiple            
+        $sourceStreams = $pipelineObj.StreamObjects
 
-                if($filesWritten -notcontains $actualDest){
-                    # if the file exists delete it first because it's the first write
-                    if(-not $append -and (test-path $actualDest)){
+        foreach($currentStreamPipeObj in $sourceStreams){
+            [System.IO.Stream]$currentStream = ($currentStreamPipeObj.GetReadStream())
+            $actualDest = $destination[$currentIndex]
+            
+            # see if it's a directory and if so append the source file to it
+            if(Test-Path $actualDest -PathType Container){
+                $actualDest = (Join-Path $actualDest ($currentStreamPipeObj.SourcePath.Name))
+            }
+
+            if($filesWritten -notcontains $actualDest){
+                # if the file exists delete it first because it's the first write
+                if(-not $append -and (test-path $actualDest)){                        
+                    # in the special case that src and dest are the same, don't delete the file first
+                    [string]$filesource = $currentStreamPipeObj.SourcePath
+                    if([string]::Compare($filesource,$actualDest,$true) -ne 0){
                         Remove-Item $actualDest | Write-Verbose
                     }
-                    $filesWritten += $actualDest
                 }
+                $filesWritten += $actualDest
+            }
 
-                # write the stream to the dest and close the source stream
-                try{
-                    if( ($destStreams[$actualDest]) -eq $null){
-                        $actualDest | Ensure-ParentDirExists
-                        $destStreams[$actualDest] = [System.IO.File]::OpenWrite($actualDest)
-                    }
+            # write the stream to the dest and close the source stream
+            try{                    
+                [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
+                # todo: buffer this
+                $strContents = $reader.ReadToEnd()
+                $reader.Close() | Out-Null
+                $reader.Dispose() | Out-Null
+                $currentStream.Close() | Out-Null
+                $currentStream.Dispose() | Out-Null
 
-                    [ValidateNotNull()]$streamToWrite = $destStreams[$actualDest]
-                    [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
-                    [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $streamToWrite
-                    $strmsToClose += $reader
-                    $strmsToClose += $writer
-
-                    $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null
-
-                    # todo: buffer this
-                    $strContents = $reader.ReadToEnd()
-                    $writer.Write($strContents) | Out-Null
-                    $writer.Flush() | Out-Null
-                    $writer.Write("`r`n") | Out-Null
-                    $writer.Flush() | Out-Null
-
-                    $currentStream.Flush() | Out-Null
-
-                    # return the file to the pipeline
-                    Get-Item $actualDest
+                if( (($destStreams[$actualDest]) -eq $null) -or (-not ($destStreams[$actualDest].CanWrite)) ){
+                    $actualDest | Ensure-ParentDirExists
+                    Start-Sleep -Milliseconds 2
+                    $destStreams[$actualDest] = [System.IO.File]::OpenWrite($actualDest)
                 }
-                catch{
-                    $_ | Write-Error
-                }
+                [ValidateNotNull()]$streamToWrite = $destStreams[$actualDest]
+                [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $streamToWrite
+
+                $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null                    
+                $writer.Write($strContents) | Out-Null
+                $writer.Flush() | Out-Null
+                $writer.Write("`r`n") | Out-Null
+                $writer.Flush() | Out-Null
+
+                # return the file to the pipeline
+                $returnobj += (Get-Item $actualDest)
+
                 # if the dest only has one value then don't increment it
                 if($destination.Count -gt 1){
                     $currentIndex++ | Out-Null
-                }
+                }                
+                
+                $writer.Close() | Out-Null
+                $writer.Dispose() | Out-Null
             }
+            catch{
+                throw ("An error occured during writing to the destination. Exception: {0}`r`n{1}" -f $_.Exception,(Get-PSCallStack|Out-String))
+            }                
         }
-        finally{
-            foreach($strm in $strmsToClose){
-                try{
-                    $strm.Dispose()
-                }
-                catch [System.ObjectDisposedException]{
-                    # this exception will be thrown if we dispose of a stream more than once.
-                    # for ex when dest has multiple input files but only one dest,
-                    # so its ok to ignore it
-                }
-            }
-        }
+
+        # return the results
+        InternalGet-GeoffreyPipelineObject -streamObjects $returnobj
     }
 }
 Set-Alias dest Invoke-GeoffreyDest
+
+function Invoke-GeoffreyCombine{
+    [cmdletbinding()]
+    param(
+        [Parameter(ValueFromPipeline=$true,Position=1)]
+        [object]$pipelineObj # type is GeoffreyPipelineObject
+    )
+    process{}
+    end{
+        $currentIndex = 0
+
+        # setup the destination stream here
+        [System.IO.MemoryStream]$memstream = New-Object -TypeName 'System.IO.MemoryStream'
+        [System.IO.StreamWriter]$writer = New-Object -TypeName 'System.IO.StreamWriter' -ArgumentList $memstream
+
+        $writer.BaseStream.Seek(0,[System.IO.SeekOrigin]::End) | Out-Null
+
+        try{
+            # see if we are writing to a single file or multiple
+            $sourceStreams = $pipelineObj.StreamObjects
+            foreach($currentStreamPipeObj in $sourceStreams){
+                $currentStream = ($currentStreamPipeObj.GetReadStream())
+                [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $currentStream
+
+                # todo: buffer this
+                $strContents = $reader.ReadToEnd()
+                $writer.Write($strContents) | Out-Null
+                $writer.Flush() | Out-Null
+                $writer.Write("`r`n") | Out-Null
+                $writer.Flush() | Out-Null
+
+                $currentStream.Flush() | Out-Null
+                $currentStream.Dispose() | Out-Null
+            }
+            $memstream.Position = 0
+
+            # memstream will be closed when the writer is in Dispose() so make a new stream and return that
+            [System.IO.MemoryStream]$streamtoreturn = New-Object -TypeName 'System.IO.MemoryStream'
+            $memstream.CopyTo($streamtoreturn)
+            $streamtoreturn.Flush()
+            $streamtoreturn.Position = 0
+
+            $reader.Dispose()
+            $writer.Dispose()
+
+            # return the combined object here
+            InternalGet-GeoffreyPipelineObject -streamObjects (InternalGet-GeoffreyStreamObject -sourceStream $streamtoreturn)
+        }
+        catch{
+                throw ("An error occured during writing to the destination. Exception: {0}`r`n{1}" -f $_.Exception,(Get-PSCallStack|Out-String))
+        }
+
+    }
+}
+Set-Alias combine Invoke-GeoffreyCombine
 
 [string]$script:ajaxminpath = $null
 <#
@@ -534,7 +793,7 @@ function Invoke-GeoffreyMinifyCss{
     [cmdletbinding()]
     param(
         [Parameter(Position=0,ValueFromPipeline=$true)]
-        [object[]]$sourceStreams,  # type is GeoffreySourcePipeObj
+        [object]$pipelineObj,  # type is GeoffreyPipelineObject
 
         [Parameter(Position=1)]
         [string]$settingsJson,
@@ -569,7 +828,7 @@ function Invoke-GeoffreyMinifyCss{
         }
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
     }
-    process{
+    end{
         [Microsoft.Ajax.Utilities.CssSettings]$csssettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CssSettings'
         if(-not [string]::IsNullOrWhiteSpace($settingsJson)){
             Add-Type -Path (Join-Path (Get-NuGetPackage newtonsoft.json -version '6.0.8' -binpath) Newtonsoft.Json.dll)
@@ -587,8 +846,10 @@ function Invoke-GeoffreyMinifyCss{
             }
         }
 
+        $sourceStreams = $pipelineObj.StreamObjects
+        $streamObjects = @()
         foreach($cssstreampipeobj in $sourceStreams){
-            $cssstream = ($cssstreampipeobj.SourceStream)
+            $cssstream = ($cssstreampipeobj.GetReadStream())
             # minify the stream and return
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $cssstream
             $source = $reader.ReadToEnd()
@@ -603,8 +864,11 @@ function Invoke-GeoffreyMinifyCss{
             $stringwriter.Flush() | Out-Null
             $memStream.Position = 0
             # return the stream to the pipeline
-            InternalGet-GeoffreySourcePipelineObj -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath)
+            $streamObjects += (InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($cssstreampipeobj.SourcePath))
         }
+
+        # return the results
+        InternalGet-GeoffreyPipelineObject -streamObjects $streamObjects
     }
 }
 Set-Alias minifycss Invoke-GeoffreyMinifyCss -Description 'This alias is deprecated use cssmin instead'
@@ -682,7 +946,7 @@ function Invoke-GeoffreyMinifyJavaScript{
         # note: parameters that have the same name as CodeSettings properties
         #       will get passed to CodeSettings
         [Parameter(ValueFromPipeline=$true,Position=0)]
-        [object[]]$sourceStreams,  # type is GeoffreySourcePipeObj
+        [object]$pipelineObj,  # type is GeoffreyPipelineObject
 
         [Parameter(Position=1)]
         [string]$settingsJson,
@@ -725,7 +989,7 @@ function Invoke-GeoffreyMinifyJavaScript{
         }
         $minifier = New-Object -TypeName 'Microsoft.Ajax.Utilities.Minifier'
     }
-    process{
+    end{
         [Microsoft.Ajax.Utilities.CodeSettings]$codeSettings = New-Object -TypeName 'Microsoft.Ajax.Utilities.CodeSettings'
         if(-not [string]::IsNullOrWhiteSpace($settingsJson)){
             # convertfrom-json doesn't work in powershell < 5 for CodeSettings. Instead use json.net
@@ -744,8 +1008,10 @@ function Invoke-GeoffreyMinifyJavaScript{
             }
         }
 
+        $sourceStreams = $pipelineObj.StreamObjects
+        $streamObjects = @()
         foreach($jsstreampipeobj in $sourceStreams){
-            $jsstream = ($jsstreampipeobj.SourceStream)
+            $jsstream = ($jsstreampipeobj.GetReadStream())
             # minify the stream and return
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $jsstream
             $source = $reader.ReadToEnd()
@@ -758,9 +1024,11 @@ function Invoke-GeoffreyMinifyJavaScript{
             $stringwriter.Flush() | Out-Null
             $memStream.Position = 0
 
-            # return the stream to the pipeline
-            InternalGet-GeoffreySourcePipelineObj -sourceStream $memStream -sourcePath ($jsstreampipeobj.SourcePath)
+            $streamObjects += (InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($jsstreampipeobj.SourcePath))
         }
+
+        # return the results
+        InternalGet-GeoffreyPipelineObject -streamObjects $streamObjects
     }
 }
 Set-Alias minifyjs Invoke-GeoffreyMinifyJavaScript -Description 'This alias is deprecated use jsmin instead'
@@ -771,7 +1039,7 @@ function Invoke-GeoffreyLess{
     [cmdletbinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [object[]]$sourceStreams  # type is GeoffreySourcePipeObj        
+        [object]$pipelineObj  # type is GeoffreyPipelineObject
     )
     begin{
         if([string]::IsNullOrEmpty($script:lessassemblypath)){
@@ -785,9 +1053,11 @@ function Invoke-GeoffreyLess{
             Add-Type -Path $assemblyPath | Out-Null
         }
     }
-    process{
+    end{
+        $sourceStreams = $pipelineObj.StreamObjects
+        $streamObjects = @()
         foreach($lessstreampipeobj in $sourceStreams){
-            $lessstream = ($lessstreampipeobj.SourceStream)
+            $lessstream = ($lessstreampipeobj.GetReadStream())
             # read the file and compile it
             [System.IO.StreamReader]$reader = New-Object -TypeName 'System.IO.StreamReader' -ArgumentList $lessstream
             $source = $reader.ReadToEnd()
@@ -799,9 +1069,11 @@ function Invoke-GeoffreyLess{
             $stringwriter.Flush() | Out-Null
             $memStream.Position = 0
 
-            # return the stream to the pipeline
-            InternalGet-GeoffreySourcePipelineObj -sourceStream $memStream -sourcePath ($lessstreampipeobj.SourcePath)
+            $streamObjects += (InternalGet-GeoffreyStreamObject -sourceStream $memStream -sourcePath ($lessstreampipeobj.SourcePath))
         }
+
+        # return the results
+        InternalGet-GeoffreyPipelineObject -streamObjects $streamObjects
     }
 }
 Set-Alias less Invoke-GeoffreyLess
