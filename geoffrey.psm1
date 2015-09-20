@@ -97,22 +97,20 @@ function Ensure-NuGetPowerShellIsLoaded{
 }
 
 function Invoke-GeoffreyRequires{
-    [cmdletbinding(DefaultParameterSetName='nameorurl')]
+    [cmdletbinding()]
     param(
-        [Parameter(Position=0,ParameterSetName='nameorurl')]
+        [Parameter(Position=0,Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
         [string]$nameorurl,
 
-        [Parameter(Position=0,ParameterSetName='nameversion',Mandatory=$true)]
-        [string]$name,
+        [Parameter(Position=1)]
+        [bool]$condition = $true,
 
-        [Parameter(Position=1,ParameterSetName='nameversion')]
+        [Parameter(Position=2)]
         [string]$version,
 
-        [Parameter(Position=2,ParameterSetName='nameversion')]
-        [switch]$prerelease,
-
-        [Parameter(Position=0,ParameterSetName='url')]
-        $url
+        [Parameter(Position=3)]
+        [switch]$prerelease
     )
     begin{
         # make sure nuget-powershell is loaded and ready to be called
@@ -120,6 +118,7 @@ function Invoke-GeoffreyRequires{
     }
     process{
         if($global:geoffreycontext.RunTasks){
+            [string]$url = $null
             if($PSBoundParameters.ContainsKey('nameorurl')){
                 # see if the value is a url or the name of a nuget package
                 [System.Uri]$uriresult = $null
@@ -133,7 +132,7 @@ function Invoke-GeoffreyRequires{
             if([string]::IsNullOrWhiteSpace($url)){
                 # add required params here
                 $getnugetparams = @{
-                    'name'=$name
+                    'name'=$nameorurl
                     'binpath'=$true
                 }
 
@@ -141,15 +140,17 @@ function Invoke-GeoffreyRequires{
                     $getnugetparams.Add('version',$version)
                 }
                 if($PSBoundParameters.ContainsKey('prerelease')){
-                    $getnugetparams.Add('prerelease',$true)
+                    $getnugetparams.Add('prerelease',1)
                 }
 
                 $pkgpath = Get-NuGetPackage @getnugetparams
-                # load the module inside the package
+                # load the module inside the packages
+                InternalImport-ModuleFromFolder -path $pkgpath
             }
             else{
                 # invoke with iex
                 if( ($global:geoffreysettings.EnableRequiresViaUrl) -eq $true){
+                    if($condition -eq $true){
                     # before executing convert to uri and then get absolut uri from that to make sure
                     # that users have not injected any PS into the requires string
                     [System.Uri]$uriresult = $null
@@ -166,6 +167,10 @@ function Invoke-GeoffreyRequires{
                     else{
                         throw ('Unable to parse the provided url [{0}]' -f $url)
                     }
+                    }
+                    else{
+                        'Skipping [requires {0}] because the condition evaluated to false' -f $url | Write-Verbose
+                    }
                 }
                 else{
                     'Skipping [requires {0}] because [$global:geoffreysettings.EnableRequiresViaUrl] is false' -f $url | Write-Warning
@@ -178,6 +183,56 @@ function Invoke-GeoffreyRequires{
     }
 }
 Set-Alias requires Invoke-GeoffreyRequires
+
+<#
+.SYNOPSIS
+    This will load the module from the folder specified.
+    Order to search:
+     1. tools\g.install.ps1
+     2. tools\*.psd1 - if any file matches *.psd1 then all *.psm1 files are ignored
+     3. tools\*.psm1
+#>
+function InternalImport-ModuleFromFolder{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipeline=$true)]
+        [System.IO.DirectoryInfo[]]$path
+    )
+    process{
+        foreach($p in $path){
+            try{
+                [System.IO.DirectoryInfo]$tools = (Join-Path $p 'tools')
+                [System.IO.FileInfo]$installFile = (Join-Path $tools 'g.install.ps1')
+                [System.IO.FileInfo[]]$psd1Files = (Get-ChildItem $tools *.psd1)
+                [System.IO.FileInfo[]]$psm1Files = (Get-ChildItem $tools *.psm1)
+
+                if(Test-Path $installFile){
+                    # install file found, execute it
+                    'Executing install file at [{0}]' -f ($installFile.FullName) | Write-Verbose
+                    . ($installFile.FullName)
+                }
+                elseif($psd1Files.Length -gt 0){
+                    foreach($psd1 in $psd1Files){
+                        'Importing module at [{0}]' -f ($psd1.FullName) | Write-Verbose
+                        Import-Module ($psd1.FullName) -Global -DisableNameChecking | Write-Verbose
+                    }
+                }
+                elseif($psm1Files.Length -gt 0){
+                    foreach($psm1 in $psm1Files){
+                        'Importing module at [{0}]' -f ($psm1.FullName) | Write-Verbose
+                        Import-Module ($psm1.FullName) -Global -DisableNameChecking | Write-Verbose
+                    }
+                }
+                else{
+                    'No modules found in [{0}] to import' -f ($p.FullName) | Write-Warning
+                }
+            }
+            catch{
+                "An error occured while loading modules in folder [{0}].`r`nException [{1}].`r`n{2}" -f $p, ($_.Exception),(Get-PSCallStack) | Write-Warning
+            }
+        }
+    }
+}
 
 <#
 .SYNOPSIS
