@@ -432,7 +432,7 @@ body {
 	padding: 0;
 	}
 '@
-
+    requires 'ajax-min'
     It 'Can invoke Invoke-GeoffreyMinifyCss with a single file'{
         $samplecss01path = 'minifycss\sample01.css'
         Setup -File -Path $samplecss01path -Content $script:samplecss01

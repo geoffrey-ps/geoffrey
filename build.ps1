@@ -151,7 +151,14 @@ function Build-Projects{
 
         # copy other files to the output folder
         [System.IO.FileInfo[]]$filesToCopy = "$scriptDir\geoffrey.nuspec","$scriptDir\geoffrey.psm1","$scriptDir\LICENSE","$scriptDir\readme.md"
-        Copy-Item -Path $filesToCopy -Destination $outputPath        
+
+        Copy-Item -Path $filesToCopy -Destination $outputPath
+        [System.IO.DirectoryInfo]$modsFolder = (Join-Path $scriptDir 'modules')
+        $destModsFolder = (Join-Path $outputPath 'modules')        
+        if(Test-Path $destModsFolder){
+            Remove-Item $destModsFolder -Recurse
+        }
+        Copy-Item ($modsFolder.FullName) -Destination $outputPath -Recurse
     }
 }
 
@@ -165,9 +172,21 @@ function Build-NuGetPackage{
 
         Push-Location
         try{
-            Set-Location $outputPath
-            'building nuget package' | Write-Output
-            Invoke-CommandString -command (Get-Nuget) -commandArgs @('pack','geoffrey.nuspec','-NoPackageAnalysis','-OutputDirectory',($outputPathNuget.FullName))
+            [System.IO.FileInfo[]]$nuspecFilesToBuild = @()
+            $nuspecFilesToBuild += (Join-Path $outputPath 'geoffrey.nuspec')
+            $nuspecFilesToBuild += (Get-ChildItem -Path (Join-Path $outputPath 'modules') *.nuspec -Recurse -File)
+
+            foreach($nufile in $nuspecFilesToBuild){
+                Push-Location
+                try{
+                    Set-Location -Path ($nufile.Directory.FullName)
+                    'Building nuget package for [{0}]' -f ($nufile.FullName) | Write-Verbose
+                    Invoke-CommandString -command (Get-Nuget) -commandArgs @('pack',($nufile.Name),'-NoPackageAnalysis','-OutputDirectory',($outputPathNuget.FullName))
+                }
+                finally{
+                    Pop-Location
+                }
+            }
         }
         finally{
             Pop-Location

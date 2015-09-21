@@ -4,11 +4,11 @@
 -->
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">  
   <metadata>
-    <id>geoffrey</id>
-    <version>0.0.5-beta</version>
+    <id>geoffrey-ajax-min</id>
+    <version>0.0.6-beta</version>
     <authors>Sayed Ibrahim Hashimi</authors>
     <description>
-      Package containing Geoffrey, a PowerShell task runner for web apps.
+      Package containing the ajax-min module for geoffrey
       
       For more info see https://github.com/geoffrey-ps/geoffrey.
 
@@ -19,16 +19,12 @@
     <licenseUrl>https://github.com/geoffrey-ps/geoffrey/blob/master/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <copyright>Copyright 2015 Sayed Ibrahim Hashimi</copyright>
-    <tags>msbuild</tags>
     <!-- This is hack to avoid having content in the package -->
     <frameworkAssemblies>
       <frameworkAssembly assemblyName="System"  />
     </frameworkAssemblies>
   </metadata>
   <files>
-    <file src="README.md" />
-    <file src="geoffrey.psm1" target="tools" />
-    <file src="Minimatch.dll" target="tools" />
-    <file src="Geoffry.Watch.dll" target="tools" />
+    <file src="geoffrey-ajax-min.psm1" target="tools" />
 </files>
 </package>
