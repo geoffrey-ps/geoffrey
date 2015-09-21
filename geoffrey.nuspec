@@ -19,7 +19,6 @@
     <licenseUrl>https://github.com/geoffrey-ps/geoffrey/blob/master/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <copyright>Copyright 2015 Sayed Ibrahim Hashimi</copyright>
-    <tags>msbuild</tags>
     <!-- This is hack to avoid having content in the package -->
     <frameworkAssemblies>
       <frameworkAssembly assemblyName="System"  />
