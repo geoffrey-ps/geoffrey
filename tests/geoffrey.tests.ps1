@@ -957,7 +957,7 @@ Describe 'InternalOverrideSettingsFromEnv tests'{
         $env:mysetting = $mysettingvalue
         $env:othersetting = $othersettingvalue
 
-        InternalOverrideSettingsFromEnv -settingsObj $settingsObj
+        InternalOverrideSettingsFromEnv -settingsObj $settingsObj -prefix ''
         $settingsObj.MySetting | Should Be $mysettingvalue
         $settingsObj.OtherSetting | Should Be $othersettingvalue
 
@@ -989,5 +989,59 @@ Describe 'InternalOverrideSettingsFromEnv tests'{
 
         Remove-Item -Path $mysettingpath
         Remove-Item -Path $othersettingpath
+    }
+}
+
+Describe 'requires tests'{
+    [string]$global:lastMockCalled = 'none'
+    $global:lastMockArgs = $null
+
+    BeforeEach{
+        $global:lastMockCalled = 'none'
+        $global:lastMockArgs = $null
+    }
+
+    Mock -ModuleName geoffrey InternalDownloadAndInvoke{
+        $global:lastMockCalled = 'iex'
+        $global:lastMockArgs = $args
+        $message = 'inside custom iex'
+        $message | Write-Host
+    }
+
+    Mock -ModuleName geoffrey Get-NuGetPackage{
+        $global:lastMockCalled = 'Get-NugetPackage'
+        $global:lastMockArgs = $args
+    }
+
+    Mock -ModuleName nuget-powershell Get-NuGetPackage{
+        $global:lastMockCalled = 'Get-NugetPackage'
+        $global:lastMockArgs = $args
+    }
+
+    It 'can accept a url'{
+        requires 'https://someurl.com/install.ps1'
+        $global:lastMockCalled | Should be 'iex'
+        $global:lastMockArgs[0] | should be '-url:'
+        $global:lastMockArgs[1] | should be 'https://someurl.com/install.ps1'
+    }
+
+    It 'will skip iex if false condition for url'{
+        requires 'https://someurl.ps1' $false
+        $global:lastMockCalled | Should be 'none'
+    }
+
+    It 'will skip iex if false condition for package'{
+        requires 'somepackage' $false
+        $global:lastMockCalled | Should be 'none'
+    }
+
+    It 'calls get-nugetpackage'{
+        'inside get-nugetpackage' | write-host
+        requires -nameorurl 'name-here' -version 'version here'
+        $global:lastMockCalled | Should be 'Get-NuGetPackage'
+        $global:lastMockArgs -contains '-name:' | Should be $true
+        $global:lastMockArgs -contains 'geoffrey-name-here' | Should be $true
+        $global:lastMockArgs -contains '-version:' | Should be $true
+        $global:lastMockArgs -contains 'version here' | Should be $true
     }
 }

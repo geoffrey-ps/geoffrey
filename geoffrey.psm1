@@ -37,7 +37,7 @@ function InternalOverrideSettingsFromEnv{
         $settingsObj = $global:geoffreysettings,
 
         [Parameter(Position=1)]
-        [string]$prefix
+        [string]$prefix = 'geoffrey'
     )
     process{
         if($settingsObj -eq $null){
@@ -53,6 +53,8 @@ function InternalOverrideSettingsFromEnv{
         }
     }
 }
+# call it to override settings now
+InternalOverrideSettingsFromEnv
 
 # later we will use this to check if it has been initalized and throw an error if not
 function Reset-Geoffrey{
@@ -87,12 +89,39 @@ function Ensure-NuGetPowerShellIsLoaded{
         }
 
         if(!$nugetpsloaded){
-            (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/ligershark/nuget-powershell/master/get-nugetps.ps1") | iex
+            (new-object Net.WebClient).DownloadString("https://raw.githubusercontent.com/ligershark/nuget-powershell/master/get-nugetps.ps1") | Invoke-Expression
         }
 
         # verify it was loaded
         if(-not (get-command Get-NuGetPackage -ErrorAction SilentlyContinue)){
             throw ('Unable to load nuget-powershell, unknown error')
+        }
+    }
+}
+
+function InternalInvoke-Expression{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipeline=$true,Mandatory=$true)]
+        [string]$Command
+    )
+    Invoke-Expression -Command $Command
+}
+
+function InternalDownloadAndInvoke{
+    [cmdletbinding()]
+    param(
+        [Parameter(Position=0,ValueFromPipeline=$true)]
+        [string]$url
+    )
+    process{
+        [Uri]$uriresult = $null
+        [Uri]::TryCreate($url,[UriKind]::Absolute,[ref] $uriresult)
+        if($uriresult -ne $null){
+            (new-object Net.WebClient).DownloadString(($uriresult.AbsoluteUri)) | Invoke-Expression
+        }
+        else{
+            throw ('Unable to parse the provided url [{0}]' -f $url)
         }
     }
 }
@@ -176,22 +205,7 @@ function Invoke-GeoffreyRequires{
                 # invoke with iex
                 if( ($global:geoffreysettings.EnableRequiresViaUrl) -eq $true){
                     if($condition -eq $true){
-                    # before executing convert to uri and then get absolut uri from that to make sure
-                    # that users have not injected any PS into the requires string
-                    [System.Uri]$uriresult = $null
-                    [Uri]::TryCreate($url,[UriKind]::Absolute,[ref] $uriresult)
-                    if($uriresult -ne $null){
-                        try{
-                            'Executing [{0}] from requires' -f ($uriresult.AbsoluteUri) |Write-Verbose
-                            (new-object Net.WebClient).DownloadString(($uriresult.AbsoluteUri)) | iex
-                        }
-                        catch{
-                            throw ("An error occured while executing [{0}] from requires. Exception: [{1}].`r`n{2}" -f ($uriresult.AbsoluteUri),($_.Exception),(Get-PSCallStack))
-                        }
-                    }
-                    else{
-                        throw ('Unable to parse the provided url [{0}]' -f $url)
-                    }
+                        InternalDownloadAndInvoke -url $url
                     }
                     else{
                         'Skipping [requires {0}] because the condition evaluated to false' -f $url | Write-Verbose
