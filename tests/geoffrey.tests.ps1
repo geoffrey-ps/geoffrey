@@ -10,7 +10,8 @@ $scriptDir = ((Get-ScriptDirectory) + "\")
 
 . (Join-Path $scriptDir 'import-geoffrey.ps1')
 
-requires 'ajax-min'
+requires ajax-min
+requires less
 # begin tests
 Describe 'New-GeoffreyTask tests'{
     It 'Can register a new task with a definition'{
