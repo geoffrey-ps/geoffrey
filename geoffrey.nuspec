@@ -5,14 +5,14 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">  
   <metadata>
     <id>geoffrey</id>
-    <version>0.0.7-beta</version>
+    <version>0.0.8-beta</version>
     <authors>Sayed Ibrahim Hashimi</authors>
     <description>
       Package containing Geoffrey, a PowerShell task runner for web apps.
       
       For more info see https://github.com/geoffrey-ps/geoffrey.
 
-      Commit ID: $(COMMIT_ID)
+      Commit: https://github.com/geoffrey-ps/geoffrey/commit/$(COMMIT_ID)
     </description>    
     <language>en-US</language>
     <projectUrl>https://github.com/geoffrey-ps/geoffrey/</projectUrl>
