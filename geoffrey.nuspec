@@ -12,7 +12,7 @@
       
       For more info see https://github.com/geoffrey-ps/geoffrey.
 
-      Commit ID: $(COMMIT_ID)
+      Commit: https://github.com/geoffrey-ps/geoffrey/commit/$(COMMIT_ID)
     </description>    
     <language>en-US</language>
     <projectUrl>https://github.com/geoffrey-ps/geoffrey/</projectUrl>
