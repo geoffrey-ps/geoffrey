@@ -39,6 +39,7 @@ task init{
     Get-ChildItem $destfolder -Recurse -File | Remove-Item
 
     requires ajax-min
+    requires less
     # requires geoffrey-less
     # requires geoffrey-coffee
     # requires geoffrey-sass

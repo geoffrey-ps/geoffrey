@@ -10,6 +10,8 @@ $scriptDir = ((Get-ScriptDirectory) + "\")
 
 . (Join-Path $scriptDir 'import-geoffrey.ps1')
 
+requires ajax-min
+requires less
 # begin tests
 Describe 'New-GeoffreyTask tests'{
     It 'Can register a new task with a definition'{
@@ -432,7 +434,7 @@ body {
 	padding: 0;
 	}
 '@
-    requires 'ajax-min'
+
     It 'Can invoke Invoke-GeoffreyMinifyCss with a single file'{
         $samplecss01path = 'minifycss\sample01.css'
         Setup -File -Path $samplecss01path -Content $script:samplecss01
