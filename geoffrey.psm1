@@ -15,6 +15,7 @@ $global:geoffreysettings = new-object psobject -Property @{
     GeoffreyPrintTaskTimeColor = 'Green'
     EnableRequiresViaUrl = $true
     EnableLoadingLocalModules = $true
+    ModuleSearchPaths = [System.IO.DirectoryInfo[]]@()
 }
 
 [bool]$watcherLoaded = $false
@@ -99,15 +100,6 @@ function Ensure-NuGetPowerShellIsLoaded{
     }
 }
 
-function InternalInvoke-Expression{
-    [cmdletbinding()]
-    param(
-        [Parameter(Position=0,ValueFromPipeline=$true,Mandatory=$true)]
-        [string]$Command
-    )
-    Invoke-Expression -Command $Command
-}
-
 function InternalDownloadAndInvoke{
     [cmdletbinding()]
     param(
@@ -154,75 +146,73 @@ function Invoke-GeoffreyRequires{
             'Skipping requires because the condition evaluated to false' | Write-Verbose
             return
         }
+        if($global:geoffreycontext.RunTasks -eq $false){
+            'Skipping requires because ''geoffreycontext.RunTasks'' is false' | Write-Verbose
+            return
+        }
 
-        if($global:geoffreycontext.RunTasks){
-            [string]$url = $null
-            if($PSBoundParameters.ContainsKey('nameorurl')){
-                # see if the value is a url or the name of a nuget package
-                [System.Uri]$uriresult = $null
-                [Uri]::TryCreate($nameorurl,[UriKind]::Absolute,[ref] $uriresult)
-                if($uriresult -ne $null){
-                    $url = $nameorurl
+        [string]$url = $null
+        # see if the value is a url or the name of a nuget package
+        [System.Uri]$uriresult = $null
+        [Uri]::TryCreate($nameorurl,[UriKind]::Absolute,[ref] $uriresult)
+        if($uriresult -ne $null){
+            $url = $nameorurl
+        }
+
+        # if $url is empty then its a nuget package
+        if([string]::IsNullOrWhiteSpace($url)){
+            $pkgName = "geoffrey-$nameorurl"
+            if($noprefix){
+                $pkgName = $nameorurl
+            }
+
+            if($global:geoffreysettings.EnableLoadingLocalModules -eq $true){
+                $localModuleFound = $false
+                # before getting from nuget see if there is a package locally
+                [System.IO.DirectoryInfo[]]$searchFolders = (Join-Path $pwd "modules\$pkgName"),(Join-Path $scriptDir "modules\$pkgName")
+                if($geoffreysettings.ModuleSearchPaths -ne $null -and ($geoffreysettings.ModuleSearchPaths.Count -gt 0)){
+                    foreach($path in $geoffreysettings.ModuleSearchPaths){
+                        $searchFolders += $path
+                    }
+                }
+
+                foreach($path in $searchFolders){
+                    if(Test-Path $path){
+                        'Loading module from local folder [{0}]' -f $path | Write-Verbose
+                        InternalImport-ModuleFromFolder -path $path -toolsFolderRelPath ''
+                        $localModuleFound = $true
+                        break;
+                    }
                 }
             }
 
-            # if $url is empty then its a nuget package
-            if([string]::IsNullOrWhiteSpace($url)){
-                $pkgName = "geoffrey-$nameorurl"
-                if($noprefix){
-                    $pkgName = $nameorurl
+            if(-not $localModuleFound){
+                # add required params here
+                $getnugetparams = @{
+                    'name'=$pkgName
+                    'binpath'=$true
                 }
 
-                if($global:geoffreysettings.EnableLoadingLocalModules -eq $true){
-                    $localModuleFound = $false
-                    # before getting from nuget see if there is a package locally
-                    [System.IO.DirectoryInfo[]]$searchFolders = (Join-Path $pwd "modules\$pkgName"),(Join-Path $scriptDir "modules\$pkgName")
-                    foreach($path in $searchFolders){
-                        if(Test-Path $path){
-                            'Loading module from local folder [{0}]' -f $path | Write-Verbose
-                            InternalImport-ModuleFromFolder -path $path -toolsFolderRelPath ''
-                            $localModuleFound = $true
-                            break;
-                        }
-                    }
+                if($PSBoundParameters.ContainsKey('version')){
+                    $getnugetparams.Add('version',$version)
+                }
+                if($PSBoundParameters.ContainsKey('prerelease')){
+                    $getnugetparams.Add('prerelease',1)
                 }
 
-                if(-not $localModuleFound){
-                    # add required params here
-                    $getnugetparams = @{
-                        'name'=$pkgName
-                        'binpath'=$true
-                    }
-
-                    if($PSBoundParameters.ContainsKey('version')){
-                        $getnugetparams.Add('version',$version)
-                    }
-                    if($PSBoundParameters.ContainsKey('prerelease')){
-                        $getnugetparams.Add('prerelease',1)
-                    }
-
-                    $pkgpath = Get-NuGetPackage @getnugetparams
-                    # load the module inside the packages
-                    InternalImport-ModuleFromFolder -path $pkgpath
-                }
-            }
-            else{
-                # invoke with iex
-                if( ($global:geoffreysettings.EnableRequiresViaUrl) -eq $true){
-                    if($condition -eq $true){
-                        InternalDownloadAndInvoke -url $url
-                    }
-                    else{
-                        'Skipping [requires {0}] because the condition evaluated to false' -f $url | Write-Verbose
-                    }
-                }
-                else{
-                    'Skipping [requires {0}] because [$global:geoffreysettings.EnableRequiresViaUrl] is false' -f $url | Write-Warning
-                }
+                $pkgpath = Get-NuGetPackage @getnugetparams
+                # load the module inside the packages
+                InternalImport-ModuleFromFolder -path $pkgpath
             }
         }
         else{
-            'Skipping requires because ''geoffreycontext.RunTasks'' is false' | Write-Verbose
+            # invoke with iex
+            if( ($global:geoffreysettings.EnableRequiresViaUrl) -eq $true){
+                InternalDownloadAndInvoke -url $url
+            }
+            else{
+                'Skipping [requires {0}] because [$global:geoffreysettings.EnableRequiresViaUrl] is false' -f $url | Write-Warning
+            }
         }
     }
 }
