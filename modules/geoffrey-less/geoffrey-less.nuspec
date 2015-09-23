@@ -5,7 +5,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">  
   <metadata>
     <id>geoffrey-less</id>
-    <version>0.0.9-beta</version>
+    <version>0.0.10-beta</version>
     <authors>Sayed Ibrahim Hashimi</authors>
     <description>
       Package containing the less module for geoffrey
@@ -17,7 +17,7 @@
     <language>en-US</language>
     <projectUrl>https://github.com/geoffrey-ps/geoffrey/</projectUrl>
     <licenseUrl>https://github.com/geoffrey-ps/geoffrey/blob/master/LICENSE</licenseUrl>
-    <iconUrl>https://raw.githubusercontent.com/geoffrey-ps/geoffrey/master/geoffrey-32x32.png</iconUrl>
+    <iconUrl>https://raw.githubusercontent.com/geoffrey-ps/geoffrey/master/geoffrey-120x120.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <copyright>Copyright 2015 Sayed Ibrahim Hashimi</copyright>
     <!-- This is hack to avoid having content in the package -->
