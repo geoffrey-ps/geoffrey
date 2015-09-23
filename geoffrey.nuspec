@@ -17,6 +17,7 @@
     <language>en-US</language>
     <projectUrl>https://github.com/geoffrey-ps/geoffrey/</projectUrl>
     <licenseUrl>https://github.com/geoffrey-ps/geoffrey/blob/master/LICENSE</licenseUrl>
+    <iconUrl>https://raw.githubusercontent.com/geoffrey-ps/geoffrey/master/geoffrey-32x32.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <copyright>Copyright 2015 Sayed Ibrahim Hashimi</copyright>
     <!-- This is hack to avoid having content in the package -->
