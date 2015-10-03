@@ -281,7 +281,7 @@ function InternalImport-ModuleFromFolder{
     This is the command that users will use to run scripts.
 
 .PARAMETER scriptPath
-    Path to the script to execute, the default is '.\g.ps1'
+    Path to the script to execute, the default is '.\gfile.ps1'
 
 .PARAMETER list
     This will return the list of tasks in the file
@@ -294,7 +294,7 @@ function Invoke-Geoffrey{
     [cmdletbinding()]
     param(
         [Parameter(Position=0)]
-        [System.IO.FileInfo]$scriptPath = '.\g.ps1',
+        [System.IO.FileInfo]$scriptPath = '.\gfile.ps1',
 
         [Parameter(Position=1)]
         [switch]$list,
