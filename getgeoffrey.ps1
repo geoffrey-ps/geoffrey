@@ -56,7 +56,7 @@ function GetPsModulesPath2{
 try{
     EnsureNuGetPowerShellInstlled2
     # get the module locally
-    $installpath = (Get-NuGetPackage -name geoffrey -version 0.0.10-beta -binpath)
+    $installpath = (Get-NuGetPackage -name geoffrey -version 0.0.11-beta -binpath)
 
     # copy the files to the powershell modules folder
     $destFolderPath = (Join-Path (GetPsModulesPath2) 'geoffrey')
