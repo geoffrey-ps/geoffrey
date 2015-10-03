@@ -16,6 +16,7 @@ $global:geoffreysettings = new-object psobject -Property @{
     EnableRequiresViaUrl = $true
     EnableLoadingLocalModules = $true
     ModuleSearchPaths = [System.IO.DirectoryInfo[]]@()
+    ModulesFolderName = 'gmodules'
 }
 
 [bool]$watcherLoaded = $false
@@ -169,7 +170,7 @@ function Invoke-GeoffreyRequires{
             if($global:geoffreysettings.EnableLoadingLocalModules -eq $true){
                 $localModuleFound = $false
                 # before getting from nuget see if there is a package locally
-                [System.IO.DirectoryInfo[]]$searchFolders = (Join-Path $pwd "modules\$pkgName"),(Join-Path $scriptDir "modules\$pkgName")
+                [System.IO.DirectoryInfo[]]$searchFolders = (Join-Path $pwd "$($Global:geoffreysettings.ModulesFolderName)\$pkgName"),(Join-Path $scriptDir "$($Global:geoffreysettings.ModulesFolderName)\$pkgName")
                 if($geoffreysettings.ModuleSearchPaths -ne $null -and ($geoffreysettings.ModuleSearchPaths.Count -gt 0)){
                     foreach($path in $geoffreysettings.ModuleSearchPaths){
                         $searchFolders += $path
@@ -280,7 +281,7 @@ function InternalImport-ModuleFromFolder{
     This is the command that users will use to run scripts.
 
 .PARAMETER scriptPath
-    Path to the script to execute, the default is '.\g.ps1'
+    Path to the script to execute, the default is '.\gfile.ps1'
 
 .PARAMETER list
     This will return the list of tasks in the file
@@ -293,7 +294,7 @@ function Invoke-Geoffrey{
     [cmdletbinding()]
     param(
         [Parameter(Position=0)]
-        [System.IO.FileInfo]$scriptPath = '.\g.ps1',
+        [System.IO.FileInfo]$scriptPath = '.\gfile.ps1',
 
         [Parameter(Position=1)]
         [switch]$list,

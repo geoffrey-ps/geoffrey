@@ -153,8 +153,8 @@ function Build-Projects{
         [System.IO.FileInfo[]]$filesToCopy = "$scriptDir\geoffrey.nuspec","$scriptDir\geoffrey.psm1","$scriptDir\LICENSE","$scriptDir\readme.md"
 
         Copy-Item -Path $filesToCopy -Destination $outputPath
-        [System.IO.DirectoryInfo]$modsFolder = (Join-Path $scriptDir 'modules')
-        $destModsFolder = (Join-Path $outputPath 'modules')        
+        [System.IO.DirectoryInfo]$modsFolder = (Join-Path $scriptDir 'gmodules')
+        $destModsFolder = (Join-Path $outputPath 'gmodules')
         if(Test-Path $destModsFolder){
             Remove-Item $destModsFolder -Recurse
         }
@@ -174,7 +174,7 @@ function Build-NuGetPackage{
         try{
             [System.IO.FileInfo[]]$nuspecFilesToBuild = @()
             $nuspecFilesToBuild += (Join-Path $outputPath 'geoffrey.nuspec')
-            $nuspecFilesToBuild += (Get-ChildItem -Path (Join-Path $outputPath 'modules') *.nuspec -Recurse -File)
+            $nuspecFilesToBuild += (Get-ChildItem -Path (Join-Path $outputPath 'gmodules') *.nuspec -Recurse -File)
 
             foreach($nufile in $nuspecFilesToBuild){
                 Push-Location

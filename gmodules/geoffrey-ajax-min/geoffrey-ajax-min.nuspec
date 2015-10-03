@@ -4,11 +4,11 @@
 -->
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">  
   <metadata>
-    <id>geoffrey-less</id>
-    <version>0.0.10-beta</version>
+    <id>geoffrey-ajax-min</id>
+    <version>0.0.11-beta</version>
     <authors>Sayed Ibrahim Hashimi</authors>
     <description>
-      Package containing the less module for geoffrey
+      Package containing the ajax-min module for geoffrey
       
       For more info see https://github.com/geoffrey-ps/geoffrey.
 
@@ -26,6 +26,6 @@
     </frameworkAssemblies>
   </metadata>
   <files>
-    <file src="geoffrey-less.psm1" target="tools" />
+    <file src="geoffrey-ajax-min.psm1" target="tools" />
 </files>
 </package>

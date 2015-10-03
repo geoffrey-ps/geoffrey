@@ -860,8 +860,8 @@ Describe 'Invoke-Geoffrey tests'{
         $global:mydep3wasrun=$false
     }
 
-    It 'Can run a file with just a default task in g.ps1'{
-        $sampleScript01path = 'Invoke-Geoffrey\01\g.ps1'
+    It 'Can run a file with just a default task in gfile.ps1'{
+        $sampleScript01path = 'Invoke-Geoffrey\01\gfile.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript01
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -895,7 +895,7 @@ Describe 'Invoke-Geoffrey tests'{
     }
 
     It 'Can run a file with default that depends on other tasks'{
-        $sampleScript01path = 'Invoke-Geoffrey\03\g.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\03\gfile.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -913,7 +913,7 @@ Describe 'Invoke-Geoffrey tests'{
     }
 
     It 'Can run a file with default that depends on other tasks and pass in the script path'{
-        $sampleScript01path = 'Invoke-Geoffrey\04\g.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\04\gfile.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -925,7 +925,7 @@ Describe 'Invoke-Geoffrey tests'{
     }
 
     It 'can use -list to get task names'{
-        $sampleScript01path = 'Invoke-Geoffrey\05\g.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\05\gfile.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
@@ -938,7 +938,7 @@ Describe 'Invoke-Geoffrey tests'{
     }
 
     It 'can execute a specific task by name'{
-        $sampleScript01path = 'Invoke-Geoffrey\06\g.ps1'
+        $sampleScript01path = 'Invoke-Geoffrey\06\gfile.ps1'
         Setup -File -Path $sampleScript01path -Content $sampleScript02
         [System.IO.FileInfo]$path1 = (Join-Path $TestDrive $sampleScript01path)
 
