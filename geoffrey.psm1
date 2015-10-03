@@ -16,6 +16,7 @@ $global:geoffreysettings = new-object psobject -Property @{
     EnableRequiresViaUrl = $true
     EnableLoadingLocalModules = $true
     ModuleSearchPaths = [System.IO.DirectoryInfo[]]@()
+    ModulesFolderName = 'gmodules'
 }
 
 [bool]$watcherLoaded = $false
@@ -169,7 +170,7 @@ function Invoke-GeoffreyRequires{
             if($global:geoffreysettings.EnableLoadingLocalModules -eq $true){
                 $localModuleFound = $false
                 # before getting from nuget see if there is a package locally
-                [System.IO.DirectoryInfo[]]$searchFolders = (Join-Path $pwd "modules\$pkgName"),(Join-Path $scriptDir "modules\$pkgName")
+                [System.IO.DirectoryInfo[]]$searchFolders = (Join-Path $pwd "$($Global:geoffreysettings.ModulesFolderName)\$pkgName"),(Join-Path $scriptDir "$($Global:geoffreysettings.ModulesFolderName)\$pkgName")
                 if($geoffreysettings.ModuleSearchPaths -ne $null -and ($geoffreysettings.ModuleSearchPaths.Count -gt 0)){
                     foreach($path in $geoffreysettings.ModuleSearchPaths){
                         $searchFolders += $path
