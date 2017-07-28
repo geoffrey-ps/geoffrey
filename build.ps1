@@ -117,6 +117,7 @@ function Initalize{
     process{
         EnsurePsbuildInstlled
         EnsureNuGetPowerShellInstlled
+        Update-NuGet
         # load pester
         Import-Pester -pesterVersion '3.3.11'
     }
