@@ -53,5 +53,5 @@ function Remove-GlobalGeoffreyModule{
     }
 }
 
-Remove-GlobalGeoffreyModule
+#Remove-GlobalGeoffreyModule
 Load-GeoffreyModule
